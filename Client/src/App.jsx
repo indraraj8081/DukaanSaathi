@@ -5,6 +5,7 @@ import Dashboard from "./pages/Dashboard";
 import Products from "./pages/Products";
 import Layout from "./components/Layout";
 import ProtectedRoute from "./components/ProtectedRoute";
+import Billing from "./pages/Billing";
 
 function App() {
   return (
@@ -20,6 +21,7 @@ function App() {
         }
       >
         <Route path="/dashboard" element={<Dashboard />} />
+        <Route path="/billing" element={<Billing />} />
         <Route path="/products" element={<Products />} />
       </Route>
 

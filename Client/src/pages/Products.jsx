@@ -133,7 +133,7 @@ const Products = () => {
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           placeholder="🔍 Search by name or barcode"
-          className="border rounded p-2 flex-1 min-w-[200px] bg-white"
+          className="border rounded p-2 flex-1 min-w-\[200px\] bg-white"
         />
         <select
           value={category}
