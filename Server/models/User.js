@@ -19,10 +19,9 @@ const userSchema = new mongoose.Schema(
 );
 
 // Save hone se pehle password hash karo
-userSchema.pre("save", async function (next) {
-  if (!this.isModified("password")) return next();
+userSchema.pre("save", async function () {
+  if (!this.isModified("password")) return;
   this.password = await bcrypt.hash(this.password, 10);
-  next();
 });
 
 // Login ke time password compare karne ke liye

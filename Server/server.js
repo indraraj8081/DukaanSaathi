@@ -2,6 +2,7 @@ import express from "express";
 import dotenv from "dotenv";
 import cors from "cors";
 import connectDB from "./config/db.js";
+import authRoutes from "./routes/authRoutes.js";
 
 dotenv.config();      // .env ko load karta hai
 connectDB();          // database se jodta hai
@@ -14,6 +15,8 @@ app.use(express.json());      // request body ko JSON mein padhta hai
 app.get("/", (req, res) => {
   res.json({ message: "DukaanSaathi API running" });
 });
+
+app.use("/api/auth", authRoutes);
 
 const PORT = process.env.PORT || 8000;
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
