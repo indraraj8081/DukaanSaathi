@@ -4,24 +4,31 @@ import generateToken from "../utils/generateToken.js";
 // POST /api/auth/register
 export const registerUser = async (req, res) => {
   try {
-    const { name, shopName, email, password } = req.body;
+    const { name, shopName, email, phone, password } = req.body;
 
-    if (!name || !shopName || !email || !password) {
-      return res.status(400).json({ message: "Sabhi fields bharo" });
+    if (!name || !shopName || !email || !phone || !password) {
+      return res.status(400).json({ message: "Please fill in all fields" });
+    }
+    if (!/^[6-9]\d{9}$/.test(phone.trim())) {
+      return res.status(400).json({ message: "Enter a valid 10-digit mobile number" });
+    }
+    if (password.length < 6) {
+      return res.status(400).json({ message: "Password must be at least 6 characters" });
     }
 
     const exists = await User.findOne({ email });
     if (exists) {
-      return res.status(400).json({ message: "Ye email pehle se registered hai" });
+      return res.status(400).json({ message: "This email is already registered" });
     }
 
-    const user = await User.create({ name, shopName, email, password });
+    const user = await User.create({ name, shopName, email, phone: phone.trim(), password });
 
     res.status(201).json({
       _id: user._id,
       name: user.name,
       shopName: user.shopName,
       email: user.email,
+      phone: user.phone,
       role: user.role,
       token: generateToken(user._id),
     });

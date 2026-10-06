@@ -1,16 +1,21 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
+import {
+  AuthLayout, Field, PasswordField, ErrorBox, SubmitButton, SocialButtons,
+} from "../components/AuthUI";
 
 const Login = () => {
   const { login } = useAuth();
   const navigate = useNavigate();
-  const [form, setForm] = useState({ email: "", password: "" });
+
+  const savedEmail = localStorage.getItem("rememberedEmail") || "";
+  const [form, setForm] = useState({ email: savedEmail, password: "" });
+  const [remember, setRemember] = useState(Boolean(savedEmail));
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
-  const handleChange = (e) =>
-    setForm({ ...form, [e.target.name]: e.target.value });
+  const handleChange = (e) => setForm({ ...form, [e.target.name]: e.target.value });
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -18,65 +23,70 @@ const Login = () => {
     setLoading(true);
     try {
       await login(form.email, form.password);
+      if (remember) localStorage.setItem("rememberedEmail", form.email);
+      else localStorage.removeItem("rememberedEmail");
       navigate("/dashboard");
     } catch (err) {
-      setError(err.response?.data?.message || "Kuch galat hua");
+      setError(err.response?.data?.message || err.message || "Something went wrong");
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-green-50 px-4">
-      <form
-        onSubmit={handleSubmit}
-        className="bg-white p-8 rounded-xl shadow w-full max-w-sm"
-      >
-        <h1 className="text-2xl font-bold text-green-700 text-center">
-          DukaanSaathi 🛒
-        </h1>
-        <p className="text-center text-gray-500 text-sm mb-6">Login into your account</p>
+    <AuthLayout
+      heading="Apni Dukan Ko Banaye Digital"
+      intro="Stock, Sales, Customers aur Profit - Sab kuch ek hi jagah, Dukan Saathi ke saath."
+    >
+      <h2 className="text-2xl font-bold text-gray-900">Welcome Back!</h2>
+      <p className="text-gray-500 mt-1 mb-6">
+        Apne account me login kare aur apni dukan ka pura hisab manage kare.
+      </p>
 
-        {error && (
-          <p className="bg-red-100 text-red-700 text-sm p-2 rounded mb-4">
-            {error}
-          </p>
-        )}
+      <form onSubmit={handleSubmit} className="space-y-4">
+        <ErrorBox message={error} />
 
-        <input
+        <Field
+          icon="✉️"
           type="email"
           name="email"
-          placeholder="Email"
+          placeholder="Email address"
+          autoComplete="email"
           value={form.email}
           onChange={handleChange}
           required
-          className="w-full border rounded p-2 mb-3"
         />
-        <input
-          type="password"
+        <PasswordField
           name="password"
           placeholder="Password"
+          autoComplete="current-password"
           value={form.password}
           onChange={handleChange}
           required
-          className="w-full border rounded p-2 mb-4"
         />
 
-        <button
-          disabled={loading}
-          className="w-full bg-green-600 text-white p-2 rounded hover:bg-green-700 disabled:opacity-50"
-        >
-          {loading ? "Ruko..." : "Login"}
-        </button>
+        <label className="flex items-center gap-2 text-sm text-gray-700">
+          <input
+            type="checkbox"
+            checked={remember}
+            onChange={(e) => setRemember(e.target.checked)}
+            className="w-4 h-4 accent-green-700"
+          />
+          Remember me
+        </label>
 
-        <p className="text-sm text-center mt-4">
-          New account?{" "}
-          <Link to="/register" className="text-orange-600 font-medium">
-            Register karo
-          </Link>
-        </p>
+        <SubmitButton loading={loading}>Login →</SubmitButton>
       </form>
-    </div>
+
+      <SocialButtons />
+
+      <p className="text-center text-gray-600 mt-6">
+        Don't have an account?{" "}
+        <Link to="/register" className="text-green-700 font-semibold">
+          Sign up
+        </Link>
+      </p>
+    </AuthLayout>
   );
 };
 

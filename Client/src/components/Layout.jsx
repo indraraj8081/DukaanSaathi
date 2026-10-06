@@ -8,6 +8,7 @@ const links = [
   { to: "/bills", label: "Bills", icon: "📄" },
   { to: "/products", label: "Products", icon: "📦" },
   { to: "/reports", label: "Reports", icon: "📈" },
+  { to: "/purchases", label: "Purchases", icon: "🚚" },
 ];
 
 const Layout = () => {
