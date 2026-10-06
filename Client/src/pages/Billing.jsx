@@ -1,3 +1,4 @@
+import InvoiceModal from "../components/InvoiceModal";
 import { useEffect, useRef, useState } from "react";
 import API from "../api/axios";
 
@@ -302,26 +303,10 @@ const Billing = () => {
       </div>
 
       {/* Success popup */}
-      {doneBill && (
-        <div className="fixed inset-0 z-40 bg-black/40 flex items-center justify-center p-4">
-          <div className="bg-white rounded-xl shadow p-6 w-full max-w-sm text-center">
-            <p className="text-4xl">✅</p>
-            <h2 className="text-xl font-bold text-green-700 mt-2">Bill created</h2>
-            <p className="text-gray-600 mt-1">Bill #{doneBill.billNumber}</p>
-            <p className="text-3xl font-bold mt-2">{money(doneBill.total)}</p>
-            <p className="text-sm text-gray-500 capitalize mt-1">
-              Paid by {doneBill.paymentMode}
-            </p>
-            <button
-              onClick={newBill}
-              className="w-full mt-5 bg-green-600 text-white py-2 rounded-lg hover:bg-green-700"
-            >
-              New Bill
-            </button>
-            <p className="text-xs text-gray-400 mt-2">Print option comes in Step 5</p>
-          </div>
-        </div>
-      )}
+      {/* Success popup with invoice */}
+{doneBill && (
+  <InvoiceModal bill={doneBill} onClose={newBill} closeLabel="New Bill" />
+)}
     </div>
   );
 };

@@ -6,6 +6,8 @@ import Products from "./pages/Products";
 import Layout from "./components/Layout";
 import ProtectedRoute from "./components/ProtectedRoute";
 import Billing from "./pages/Billing";
+import Bills from "./pages/Bills";
+import Reports from "./pages/Reports";
 
 function App() {
   return (
@@ -22,7 +24,9 @@ function App() {
       >
         <Route path="/dashboard" element={<Dashboard />} />
         <Route path="/billing" element={<Billing />} />
+        <Route path="/bills" element={<Bills />} />
         <Route path="/products" element={<Products />} />
+        <Route path="/reports" element={<Reports />} />
       </Route>
 
       <Route path="*" element={<Navigate to="/dashboard" replace />} />
