@@ -2,6 +2,7 @@ import mongoose from "mongoose";
 import Bill from "../models/Bill.js";
 import Product from "../models/Product.js";
 import Counter from "../models/Counter.js";
+import Customer from "../models/Customer.js";
 
 const round = (n) => Math.round(n * 100) / 100;
 

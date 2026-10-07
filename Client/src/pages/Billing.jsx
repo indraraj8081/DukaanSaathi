@@ -20,6 +20,14 @@ const Billing = () => {
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [doneBill, setDoneBill] = useState(null);
+  const [customers, setCustomers] = useState([]);
+  const [customerId, setCustomerId] = useState("");
+
+  useEffect(() => {
+  API.get("/api/customers", { params: { limit: 100 } })
+    .then((r) => setCustomers(r.data.customers))
+    .catch(() => {});
+  }, []);
 
   // Wait 300ms after typing stops before searching
   useEffect(() => {
@@ -105,6 +113,9 @@ const Billing = () => {
     setError("");
     if (cart.length === 0) return setError("Add at least one product");
     if (discountInvalid) return setError("Discount is not valid");
+    if (paymentMode === "credit" && !customerId) {
+  return setError("Select a customer for credit sales");
+  }
 
     setSubmitting(true);
     try {
@@ -113,6 +124,7 @@ const Billing = () => {
         discount: discountNum,
         gstRate: Number(gstRate),
         paymentMode,
+        customerId: customerId || undefined,
       });
       setDoneBill(data);
     } catch (err) {
@@ -130,6 +142,7 @@ const Billing = () => {
     setGstRate("0");
     setPaymentMode("cash");
     setSearch("");
+    setCustomerId("");
     fetchProducts(); // stock has changed
     searchRef.current?.focus();
   };
@@ -279,10 +292,27 @@ const Billing = () => {
             <span className="text-green-700">{money(total)}</span>
           </div>
         </div>
-
+        
+      <div className="mt-4">
+  <label className="block text-sm text-gray-600 mb-1">
+    {paymentMode === "credit" ? "(required)" : "(optional)"}
+  </label>
+  <select
+    value={customerId}
+    onChange={(e) => setCustomerId(e.target.value)}
+    className="w-full border rounded p-2 bg-white"
+  >
+    <option value="">Walk-in customer</option>
+    {customers.map((c) => (
+      <option key={c._id} value={c._id}>
+        {c.name}{c.balance > 0 ? ` (due ${money(c.balance)})` : ""}
+      </option>
+    ))}
+  </select>
+</div>
         {/* Payment mode */}
         <div className="flex gap-2 mt-4">
-          {["cash", "upi", "card"].map((m) => (
+          {["cash", "upi", "card","credit"].map((m) => (
             <button key={m} onClick={() => setPaymentMode(m)} className={modeBtn(m)}>
               {m}
             </button>

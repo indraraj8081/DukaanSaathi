@@ -21,7 +21,9 @@ const billSchema = new mongoose.Schema(
     gstRate: { type: Number, default: 0 },
     gst: { type: Number, default: 0 },
     total: { type: Number, required: true },
-    paymentMode: { type: String, enum: ["cash", "upi", "card"], default: "cash" },
+    customerId: { type: mongoose.Schema.Types.ObjectId, ref: "Customer" },
+    customerName: { type: String },
+    paymentMode: { type: String, enum: ["cash", "upi", "card", "credit"], default: "cash" },
   },
   { timestamps: true }
 );

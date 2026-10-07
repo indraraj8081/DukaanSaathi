@@ -13,7 +13,7 @@ const Invoice = ({ bill, printRef }) => {
   return (
     <div
       ref={printRef}
-      className="bg-white text-gray-900 text-sm mx-auto w-full max-w-[340px] p-4"
+      className="bg-white text-gray-900 text-sm mx-auto w-full max-w-340px p-4"
     >
       <div className="text-center border-b border-dashed pb-3">
         <h1 className="text-lg font-bold uppercase">{user.shopName}</h1>
@@ -24,6 +24,9 @@ const Invoice = ({ bill, printRef }) => {
         <span>Bill #{bill.billNumber}</span>
         <span>{date}</span>
       </div>
+      {bill.customerName && (
+      <p className="text-xs py-1 border-b border-dashed">Customer: {bill.customerName}</p>
+       )}
 
       <table className="w-full my-2">
         <thead>
@@ -68,7 +71,7 @@ const Invoice = ({ bill, printRef }) => {
           <span>{money(bill.total)}</span>
         </div>
         <p className="text-xs text-gray-600 capitalize">
-          Paid by: {bill.paymentMode}
+        {bill.paymentMode === "credit" ? "On credit (udhaar)" : `Paid by: ${bill.paymentMode}`}
         </p>
       </div>
 
