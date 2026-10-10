@@ -332,7 +332,7 @@ const Ledger = ({ customer, onClose }) => {
               {data.entries.map((e, i) => (
                 <li key={i} className="py-2 flex justify-between gap-3">
                   <div className="min-w-0">
-                    <p className="break-words">{e.label}</p>
+                    <p className="wrap-break-words">{e.label}</p>
                     <p className="text-xs text-gray-500">
                       {new Date(e.date).toLocaleString("en-IN", { dateStyle: "medium", timeStyle: "short" })}
                     </p>

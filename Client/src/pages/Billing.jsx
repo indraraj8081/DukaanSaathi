@@ -1,33 +1,36 @@
-import InvoiceModal from "../components/InvoiceModal";
 import { useEffect, useRef, useState } from "react";
 import API from "../api/axios";
-
-const money = (n) =>
-  `₹${Number(n).toLocaleString("en-IN", { minimumFractionDigits: 0, maximumFractionDigits: 2 })}`;
+import InvoiceModal from "../components/InvoiceModal";
+import EmptyState from "../components/EmptyState";
+import { useToast } from "../context/ToastContext";
+import useDocumentTitle from "../hooks/useDocumentTitle";
+import { money } from "../utils/format";
 
 const round = (n) => Math.round(n * 100) / 100;
 
 const Billing = () => {
+  useDocumentTitle("Billing");
+  const toast = useToast();
+
   const searchRef = useRef(null);
+  const cartRef = useRef(null);
+
   const [products, setProducts] = useState([]);
   const [search, setSearch] = useState("");
   const [debounced, setDebounced] = useState("");
   const [loading, setLoading] = useState(true);
+
   const [cart, setCart] = useState([]);
   const [discount, setDiscount] = useState("");
   const [gstRate, setGstRate] = useState("0");
   const [paymentMode, setPaymentMode] = useState("cash");
-  const [error, setError] = useState("");
-  const [submitting, setSubmitting] = useState(false);
-  const [doneBill, setDoneBill] = useState(null);
+
   const [customers, setCustomers] = useState([]);
   const [customerId, setCustomerId] = useState("");
 
-  useEffect(() => {
-  API.get("/api/customers", { params: { limit: 100 } })
-    .then((r) => setCustomers(r.data.customers))
-    .catch(() => {});
-  }, []);
+  const [error, setError] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+  const [doneBill, setDoneBill] = useState(null);
 
   // Wait 300ms after typing stops before searching
   useEffect(() => {
@@ -43,20 +46,25 @@ const Billing = () => {
       });
       setProducts(data.products);
     } catch (err) {
-      setError(err.response?.data?.message || "Could not load products");
+      setError(err.response?.data?.message || err.message || "Could not load products");
     } finally {
       setLoading(false);
     }
   };
+
+  const fetchCustomers = () =>
+    API.get("/api/customers", { params: { limit: 100 } })
+      .then((r) => setCustomers(r.data.customers))
+      .catch(() => {});
 
   useEffect(() => {
     fetchProducts();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [debounced]);
 
-  // Focus the search box when the page opens (useful for barcode scanners)
   useEffect(() => {
-    searchRef.current?.focus();
+    fetchCustomers();
+    searchRef.current?.focus(); // useful for barcode scanners
   }, []);
 
   const addToCart = (p) => {
@@ -114,8 +122,8 @@ const Billing = () => {
     if (cart.length === 0) return setError("Add at least one product");
     if (discountInvalid) return setError("Discount is not valid");
     if (paymentMode === "credit" && !customerId) {
-  return setError("Select a customer for credit sales");
-  }
+      return setError("Select a customer for credit sales");
+    }
 
     setSubmitting(true);
     try {
@@ -127,8 +135,11 @@ const Billing = () => {
         customerId: customerId || undefined,
       });
       setDoneBill(data);
+      toast.success(`Bill #${data.billNumber} created`);
     } catch (err) {
-      setError(err.response?.data?.message || "Could not create the bill");
+      const msg = err.response?.data?.message || err.message || "Could not create the bill";
+      setError(msg);
+      toast.error(msg);
       fetchProducts(); // refresh stock in case it changed
     } finally {
       setSubmitting(false);
@@ -141,21 +152,22 @@ const Billing = () => {
     setDiscount("");
     setGstRate("0");
     setPaymentMode("cash");
-    setSearch("");
     setCustomerId("");
-    fetchProducts(); // stock has changed
+    setSearch("");
+    fetchProducts();   // stock has changed
+    fetchCustomers();  // credit balance may have changed
     searchRef.current?.focus();
   };
 
   const modeBtn = (mode) =>
-    `flex-1 py-2 rounded border font-medium capitalize ${
+    `py-2 rounded border font-medium capitalize ${
       paymentMode === mode
         ? "bg-green-600 text-white border-green-600"
         : "bg-white text-gray-700 hover:bg-green-50"
     }`;
 
   return (
-    <div className="grid lg:grid-cols-3 gap-4">
+    <div className="grid lg:grid-cols-3 gap-4 pb-24 lg:pb-0">
       {/* LEFT: product search and cards */}
       <div className="lg:col-span-2">
         <input
@@ -170,7 +182,21 @@ const Billing = () => {
         {loading ? (
           <p className="text-gray-500">Loading...</p>
         ) : products.length === 0 ? (
-          <p className="text-gray-500">No products found.</p>
+          debounced ? (
+            <EmptyState
+              icon="🔍"
+              title="No matching products"
+              message="Check the spelling or scan the barcode again."
+            />
+          ) : (
+            <EmptyState
+              icon="📦"
+              title="No products to bill yet"
+              message="Add products first, then come back to create bills."
+              actionLabel="Add products"
+              actionTo="/products"
+            />
+          )
         ) : (
           <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 gap-3">
             {products.map((p) => {
@@ -202,17 +228,19 @@ const Billing = () => {
       </div>
 
       {/* RIGHT: cart */}
-      <div className="bg-white rounded-xl shadow p-4 h-fit lg:sticky lg:top-4">
+      <div ref={cartRef} className="bg-white rounded-xl shadow p-4 h-fit lg:sticky lg:top-20">
         <h2 className="text-lg font-bold text-gray-800 mb-3">Current Bill</h2>
 
         {cart.length === 0 ? (
-          <p className="text-gray-500 py-6 text-center">Cart is empty. Tap a product to add it.</p>
+          <p className="text-gray-500 py-6 text-center">
+            Cart is empty. Tap a product to add it.
+          </p>
         ) : (
           <div className="space-y-3 max-h-80 overflow-y-auto">
             {cart.map((i) => (
               <div key={i.productId} className="border-b pb-2">
-                <div className="flex justify-between items-start">
-                  <p className="font-medium text-gray-800">{i.name}</p>
+                <div className="flex justify-between items-start gap-2">
+                  <p className="font-medium text-gray-800 break-words min-w-0">{i.name}</p>
                   <button
                     onClick={() => removeItem(i.productId)}
                     className="text-red-500 hover:bg-red-50 rounded px-1"
@@ -221,7 +249,7 @@ const Billing = () => {
                     🗑
                   </button>
                 </div>
-                <div className="flex items-center justify-between mt-1">
+                <div className="flex flex-wrap items-center justify-between gap-2 mt-1">
                   <span className="text-sm text-gray-500">{money(i.price)} each</span>
                   <div className="flex items-center gap-2">
                     <button
@@ -269,7 +297,6 @@ const Billing = () => {
               className={`w-24 text-right border rounded p-1 ${
                 discountInvalid ? "border-red-500" : ""
               }`}
-              placeholder="0"
             />
           </div>
           <div className="flex justify-between items-center">
@@ -280,9 +307,7 @@ const Billing = () => {
               className="border rounded p-1 bg-white"
             >
               {["0", "5", "12", "18", "28"].map((r) => (
-                <option key={r} value={r}>
-                  {r}%
-                </option>
+                <option key={r} value={r}>{r}%</option>
               ))}
             </select>
             <span>{money(gst)}</span>
@@ -292,27 +317,29 @@ const Billing = () => {
             <span className="text-green-700">{money(total)}</span>
           </div>
         </div>
-        
-      <div className="mt-4">
-  <label className="block text-sm text-gray-600 mb-1">
-    {paymentMode === "credit" ? "(required)" : "(optional)"}
-  </label>
-  <select
-    value={customerId}
-    onChange={(e) => setCustomerId(e.target.value)}
-    className="w-full border rounded p-2 bg-white"
-  >
-    <option value="">Walk-in customer</option>
-    {customers.map((c) => (
-      <option key={c._id} value={c._id}>
-        {c.name}{c.balance > 0 ? ` (due ${money(c.balance)})` : ""}
-      </option>
-    ))}
-  </select>
-</div>
+
+        {/* Customer */}
+        <div className="mt-4">
+          <label className="block text-sm text-gray-600 mb-1">
+            Customer {paymentMode === "credit" ? "(required)" : "(optional)"}
+          </label>
+          <select
+            value={customerId}
+            onChange={(e) => setCustomerId(e.target.value)}
+            className="w-full border rounded p-2 bg-white"
+          >
+            <option value="">Walk-in customer</option>
+            {customers.map((c) => (
+              <option key={c._id} value={c._id}>
+                {c.name}{c.balance > 0 ? ` (due ${money(c.balance)})` : ""}
+              </option>
+            ))}
+          </select>
+        </div>
+
         {/* Payment mode */}
-        <div className="flex gap-2 mt-4">
-          {["cash", "upi", "card","credit"].map((m) => (
+        <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-2 xl:grid-cols-4 gap-2 mt-4">
+          {["cash", "upi", "card", "credit"].map((m) => (
             <button key={m} onClick={() => setPaymentMode(m)} className={modeBtn(m)}>
               {m}
             </button>
@@ -320,7 +347,9 @@ const Billing = () => {
         </div>
 
         {error && (
-          <p className="bg-red-100 text-red-700 text-sm p-2 rounded mt-3">{error}</p>
+          <p role="alert" className="bg-red-100 text-red-700 text-sm p-2 rounded mt-3">
+            {error}
+          </p>
         )}
 
         <button
@@ -332,11 +361,26 @@ const Billing = () => {
         </button>
       </div>
 
-      {/* Success popup */}
+      {/* Mobile total bar */}
+      {cart.length > 0 && !doneBill && (
+        <div className="lg:hidden fixed bottom-0 inset-x-0 z-20 bg-white border-t shadow px-4 pt-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] flex items-center justify-between">
+          <div>
+            <p className="text-xs text-gray-500">{cart.length} item(s)</p>
+            <p className="text-lg font-bold text-green-700">{money(total)}</p>
+          </div>
+          <button
+            onClick={() => cartRef.current?.scrollIntoView({ behavior: "smooth" })}
+            className="bg-green-600 text-white px-5 py-2 rounded-lg font-semibold"
+          >
+            View Cart
+          </button>
+        </div>
+      )}
+
       {/* Success popup with invoice */}
-{doneBill && (
-  <InvoiceModal bill={doneBill} onClose={newBill} closeLabel="New Bill" />
-)}
+      {doneBill && (
+        <InvoiceModal bill={doneBill} onClose={newBill} closeLabel="New Bill" />
+      )}
     </div>
   );
 };

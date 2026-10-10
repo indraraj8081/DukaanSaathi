@@ -1,6 +1,9 @@
 import { useEffect, useState, useCallback } from "react";
 import API from "../api/axios";
 import ProductModal from "../components/ProductModal";
+import EmptyState from "../components/EmptyState";
+import { useToast } from "../context/ToastContext";
+import useDocumentTitle from "../hooks/useDocumentTitle";
 
 const daysUntil = (date) =>
   Math.ceil((new Date(date) - new Date()) / (1000 * 60 * 60 * 24));
@@ -23,6 +26,9 @@ const StockBadge = ({ p }) => {
 };
 
 const Products = () => {
+  useDocumentTitle("Products");
+  const toast = useToast();
+
   const [data, setData] = useState({ products: [], page: 1, pages: 1, total: 0 });
   const [categories, setCategories] = useState([]);
   const [search, setSearch] = useState("");
@@ -33,7 +39,6 @@ const Products = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [modal, setModal] = useState({ open: false, product: null });
-  const [toast, setToast] = useState("");
 
   // Wait 400ms after typing stops before searching
   useEffect(() => {
@@ -53,7 +58,7 @@ const Products = () => {
       });
       setData(data);
     } catch (err) {
-      setError(err.response?.data?.message || "Could not load products");
+      setError(err.response?.data?.message || err.message || "Could not load products");
     } finally {
       setLoading(false);
     }
@@ -64,30 +69,20 @@ const Products = () => {
       const { data } = await API.get("/api/products/categories");
       setCategories(data);
     } catch {
-      /* categories are optional, ignore errors */
+      /* categories are optional */
     }
   };
 
-  useEffect(() => {
-    fetchProducts();
-  }, [fetchProducts]);
-
-  useEffect(() => {
-    fetchCategories();
-  }, []);
-
-  const showToast = (msg) => {
-    setToast(msg);
-    setTimeout(() => setToast(""), 2500);
-  };
+  useEffect(() => { fetchProducts(); }, [fetchProducts]);
+  useEffect(() => { fetchCategories(); }, []);
 
   const handleSave = async (form) => {
     if (modal.product) {
       await API.put(`/api/products/${modal.product._id}`, form);
-      showToast("Product updated");
+      toast.success("Product updated");
     } else {
       await API.post("/api/products", form);
-      showToast("Product added");
+      toast.success("Product added");
     }
     setModal({ open: false, product: null });
     fetchProducts();
@@ -98,25 +93,28 @@ const Products = () => {
     if (!window.confirm(`Delete "${p.name}"? This cannot be undone.`)) return;
     try {
       await API.delete(`/api/products/${p._id}`);
-      showToast("Product deleted");
-      // If we deleted the last item on a page, go back one page
+      toast.success("Product deleted");
       if (data.products.length === 1 && page > 1) setPage(page - 1);
       else fetchProducts();
     } catch (err) {
-      setError(err.response?.data?.message || "Could not delete product");
+      toast.error(err.response?.data?.message || err.message || "Could not delete product");
     }
   };
 
-  const selectClass = "border rounded p-2 bg-white";
+  const filtered = Boolean(debounced || category || stock);
+
+  const clearFilters = () => {
+    setSearch("");
+    setDebounced("");
+    setCategory("");
+    setStock("");
+    setPage(1);
+  };
+
+  const selectClass = "border rounded p-2 bg-white w-full sm:w-auto";
 
   return (
     <div>
-      {toast && (
-        <div className="fixed top-4 right-4 z-50 bg-green-600 text-white px-4 py-2 rounded shadow">
-          {toast}
-        </div>
-      )}
-
       <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
         <h1 className="text-2xl font-bold text-gray-800">Products ({data.total})</h1>
         <button
@@ -133,7 +131,7 @@ const Products = () => {
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           placeholder="🔍 Search by name or barcode"
-          className="border rounded p-2 flex-1 min-w-\[200px\] bg-white"
+          className="border rounded p-2 w-full sm:flex-1 sm:min-w-[200px] bg-white"
         />
         <select
           value={category}
@@ -156,66 +154,107 @@ const Products = () => {
         </select>
       </div>
 
-      {error && <p className="bg-red-100 text-red-700 p-3 rounded mb-4">{error}</p>}
+      {error && <p role="alert" className="bg-red-100 text-red-700 p-3 rounded mb-4">{error}</p>}
 
-      {/* Table */}
-      <div className="bg-white rounded-xl shadow overflow-x-auto">
-        <table className="w-full text-left">
-          <thead className="bg-green-100 text-gray-700 text-sm">
-            <tr>
-              <th className="p-3">Name</th>
-              <th className="p-3">Category</th>
-              <th className="p-3">Price</th>
-              <th className="p-3">Stock</th>
-              <th className="p-3">Expiry</th>
-              <th className="p-3 text-right">Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {loading ? (
-              <tr><td colSpan="6" className="p-6 text-center text-gray-500">Loading...</td></tr>
-            ) : data.products.length === 0 ? (
-              <tr>
-                <td colSpan="6" className="p-8 text-center text-gray-500">
-                  No products found.{" "}
-                  <button
-                    className="text-green-700 font-medium underline"
-                    onClick={() => setModal({ open: true, product: null })}
-                  >
-                    Add your first product
-                  </button>
-                </td>
-              </tr>
-            ) : (
-              data.products.map((p) => (
-                <tr key={p._id} className="border-t hover:bg-gray-50">
-                  <td className="p-3 font-medium">{p.name}</td>
-                  <td className="p-3">{p.category}</td>
-                  <td className="p-3">₹{p.price}</td>
-                  <td className="p-3"><StockBadge p={p} /></td>
-                  <td className="p-3"><ExpiryBadge date={p.expiryDate} /></td>
-                  <td className="p-3 text-right whitespace-nowrap">
-                    <button
-                      onClick={() => setModal({ open: true, product: p })}
-                      className="px-2 py-1 hover:bg-green-100 rounded"
-                      title="Edit"
-                    >
-                      ✏️
-                    </button>
-                    <button
-                      onClick={() => handleDelete(p)}
-                      className="px-2 py-1 hover:bg-red-100 rounded"
-                      title="Delete"
-                    >
-                      🗑
-                    </button>
-                  </td>
+      {loading ? (
+        <p className="text-gray-500 py-8 text-center">Loading products...</p>
+      ) : data.products.length === 0 ? (
+        filtered ? (
+          <EmptyState
+            icon="🔍"
+            title="No matching products"
+            message="Try a different search or clear the filters."
+            actionLabel="Clear filters"
+            onAction={clearFilters}
+          />
+        ) : (
+          <EmptyState
+            icon="📦"
+            title="No products yet"
+            message="Add your products to start billing and tracking stock."
+            actionLabel="+ Add first product"
+            onAction={() => setModal({ open: true, product: null })}
+          />
+        )
+      ) : (
+        <>
+          {/* Desktop: table */}
+          <div className="hidden md:block bg-white rounded-xl shadow overflow-x-auto">
+            <table className="w-full text-left">
+              <thead className="bg-green-100 text-gray-700 text-sm">
+                <tr>
+                  <th className="p-3">Name</th>
+                  <th className="p-3">Category</th>
+                  <th className="p-3">Price</th>
+                  <th className="p-3">Stock</th>
+                  <th className="p-3">Expiry</th>
+                  <th className="p-3 text-right">Actions</th>
                 </tr>
-              ))
-            )}
-          </tbody>
-        </table>
-      </div>
+              </thead>
+              <tbody>
+                {data.products.map((p) => (
+                  <tr key={p._id} className="border-t hover:bg-gray-50">
+                    <td className="p-3 font-medium">{p.name}</td>
+                    <td className="p-3">{p.category}</td>
+                    <td className="p-3">₹{p.price}</td>
+                    <td className="p-3"><StockBadge p={p} /></td>
+                    <td className="p-3"><ExpiryBadge date={p.expiryDate} /></td>
+                    <td className="p-3 text-right whitespace-nowrap">
+                      <button
+                        onClick={() => setModal({ open: true, product: p })}
+                        className="px-2 py-1 hover:bg-green-100 rounded"
+                        title="Edit"
+                      >
+                        ✏️
+                      </button>
+                      <button
+                        onClick={() => handleDelete(p)}
+                        className="px-2 py-1 hover:bg-red-100 rounded"
+                        title="Delete"
+                      >
+                        🗑
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          {/* Mobile: cards */}
+          <div className="md:hidden space-y-3">
+            {data.products.map((p) => (
+              <div key={p._id} className="bg-white rounded-xl shadow p-4">
+                <div className="flex items-start justify-between gap-2">
+                  <div className="min-w-0">
+                    <p className="font-semibold text-gray-800 break-words">{p.name}</p>
+                    <p className="text-sm text-gray-500">{p.category}</p>
+                  </div>
+                  <StockBadge p={p} />
+                </div>
+                <div className="flex items-center justify-between mt-3 text-sm">
+                  <span className="font-semibold">₹{p.price}</span>
+                  <ExpiryBadge date={p.expiryDate} />
+                </div>
+                <div className="flex gap-2 mt-3">
+                  <button
+                    onClick={() => setModal({ open: true, product: p })}
+                    className="flex-1 border rounded-lg py-2 hover:bg-green-50"
+                  >
+                    ✏️ Edit
+                  </button>
+                  <button
+                    onClick={() => handleDelete(p)}
+                    className="flex-1 border border-red-200 text-red-600 rounded-lg py-2 hover:bg-red-50"
+                  >
+                    🗑 Delete
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </>
+      )}
 
       {/* Pagination */}
       {data.pages > 1 && (
@@ -227,9 +266,7 @@ const Products = () => {
           >
             ← Prev
           </button>
-          <span className="text-sm text-gray-600">
-            Page {data.page} of {data.pages}
-          </span>
+          <span className="text-sm text-gray-600">Page {data.page} of {data.pages}</span>
           <button
             disabled={page >= data.pages}
             onClick={() => setPage(page + 1)}

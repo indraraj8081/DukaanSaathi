@@ -57,13 +57,13 @@ const ProductModal = ({ product, categories, onClose, onSave }) => {
           <p className="bg-red-100 text-red-700 text-sm p-2 rounded mb-4">{error}</p>
         )}
 
-        <div className="grid grid-cols-2 gap-3">
-          <div className="col-span-2">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div className="sm:col-span-2">
             <label className={label}>Name *</label>
             <input name="name" value={form.name} onChange={handleChange} required className={input} />
           </div>
 
-          <div className="col-span-2">
+          <div className="sm:col-span-2">
             <label className={label}>Category *</label>
             <input
               name="category"
@@ -72,7 +72,7 @@ const ProductModal = ({ product, categories, onClose, onSave }) => {
               onChange={handleChange}
               required
               className={input}
-              placeholder="Type or pick one"
+              
             />
             <datalist id="category-list">
               {categories.map((c) => (
