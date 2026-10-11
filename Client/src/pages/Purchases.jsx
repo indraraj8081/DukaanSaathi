@@ -192,7 +192,7 @@ const Purchases = () => {
             {items.map((i) => (
               <div key={i.productId} className="border rounded-lg p-3">
                 <div className="flex justify-between items-start gap-2">
-                  <p className="font-medium break-words min-w-0">{i.name}</p>
+                  <p className="font-medium wrap-break-words min-w-0">{i.name}</p>
                   <button onClick={() => removeItem(i.productId)} className="text-red-500 px-1" title="Remove">🗑</button>
                 </div>
                 <div className="grid grid-cols-3 gap-2 mt-2 items-end">
@@ -260,7 +260,7 @@ const Purchases = () => {
                   </div>
                   <p className="font-bold whitespace-nowrap">{money(p.total)}</p>
                 </div>
-                <p className="text-sm text-gray-600 mt-1 break-words">
+                <p className="text-sm text-gray-600 mt-1 wrap-break-words">
                   {p.items.map((i) => `${i.name} × ${i.qty}`).join(", ")}
                 </p>
               </li>

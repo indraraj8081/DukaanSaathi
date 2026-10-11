@@ -1,11 +1,13 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
+import { useToast } from "../context/ToastContext";
 import {
   AuthLayout, Field, PasswordField, ErrorBox, SubmitButton, SocialButtons,
 } from "../components/AuthUI";
 
 const Register = () => {
+  const toast = useToast();
   const { register } = useAuth();
   const navigate = useNavigate();
   const [form, setForm] = useState({
@@ -34,6 +36,7 @@ const Register = () => {
     try {
       const { confirmPassword, ...payload } = form; // server does not need this
       await register(payload);
+      toast.success("Account created. Your shop will be visible to customers after approval.");
       navigate("/dashboard");
     } catch (err) {
       setError(err.response?.data?.message || err.message || "Something went wrong");

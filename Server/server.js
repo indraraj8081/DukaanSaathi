@@ -1,23 +1,28 @@
+import http from "http";
 import express from "express";
 import dotenv from "dotenv";
 import cors from "cors";
 import connectDB from "./config/db.js";
+import { initSocket } from "./socket.js";
 import authRoutes from "./routes/authRoutes.js";
 import productRoutes from "./routes/productRoutes.js";
 import billRoutes from "./routes/billRoutes.js";
 import dashboardRoutes from "./routes/dashboardRoutes.js";
 import reportRoutes from "./routes/reportRoutes.js";
+import customerRoutes from "./routes/customerRoutes.js";
 import purchaseRoutes from "./routes/purchaseRoutes.js";
 import supplierRoutes from "./routes/supplierRoutes.js";
-import customerRoutes from "./routes/customerRoutes.js";
+import profileRoutes from "./routes/profileRoutes.js";
+import orderRoutes from "./routes/orderRoutes.js";
+import publicRoutes from "./routes/publicRoutes.js";
 
-dotenv.config();      // .env ko load karta hai
-connectDB();          // database se jodta hai
+dotenv.config();
+connectDB();
 
 const app = express();
 
-app.use(cors());              // frontend ko allow karta hai
-app.use(express.json());      // request body ko JSON mein padhta hai
+app.use(cors());
+app.use(express.json());
 
 app.get("/", (req, res) => {
   res.json({ message: "DukaanSaathi API running" });
@@ -28,9 +33,15 @@ app.use("/api/products", productRoutes);
 app.use("/api/bills", billRoutes);
 app.use("/api/dashboard", dashboardRoutes);
 app.use("/api/reports", reportRoutes);
+app.use("/api/customers", customerRoutes);
 app.use("/api/purchases", purchaseRoutes);
 app.use("/api/suppliers", supplierRoutes);
-app.use("/api/customers", customerRoutes);
+app.use("/api/profile", profileRoutes);
+app.use("/api/orders", orderRoutes);
+app.use("/api/public", publicRoutes);
+
+const server = http.createServer(app);
+initSocket(server);
 
 const PORT = process.env.PORT || 8000;
-app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+server.listen(PORT, () => console.log(`Server running on port ${PORT}`));

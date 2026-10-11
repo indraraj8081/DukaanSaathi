@@ -1,10 +1,16 @@
-import { useEffect, useState } from "react";
-import { NavLink, Outlet } from "react-router-dom";
+import { useCallback, useEffect, useState } from "react";
+import { Link, NavLink, Outlet } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
+import { useToast } from "../context/ToastContext";
+import API from "../api/axios";
+import Avatar from "./Avatar";
 import ContactLinks from "./ContactLinks";
+import { connectSocket, beep } from "../utils/socket";
+import { money } from "../utils/format";
 
 const links = [
   { to: "/dashboard", label: "Dashboard", icon: "📊" },
+  { to: "/orders", label: "Orders", icon: "🛵", badge: true },
   { to: "/billing", label: "Billing", icon: "🧾" },
   { to: "/bills", label: "Bills", icon: "📄" },
   { to: "/products", label: "Products", icon: "📦" },
@@ -14,8 +20,45 @@ const links = [
 ];
 
 const Layout = () => {
-  const { user, logout } = useAuth();
+  const { user, logout, updateUser } = useAuth();
+  const toast = useToast();
   const [open, setOpen] = useState(false);
+  const [newOrders, setNewOrders] = useState(0);
+
+  // Load the latest profile (photo, name) once
+  useEffect(() => {
+    API.get("/api/profile")
+      .then((r) => updateUser(r.data))
+      .catch(() => {});
+  }, [updateUser]);
+
+  const loadCounts = useCallback(() => {
+    API.get("/api/orders/counts")
+      .then((r) => setNewOrders(r.data.placed))
+      .catch(() => {});
+  }, []);
+
+  // Live order alerts on every page
+  useEffect(() => {
+    loadCounts();
+    const socket = connectSocket();
+
+    const refresh = () => {
+      loadCounts();
+      window.dispatchEvent(new Event("orders:changed")); // Orders page listens to this
+    };
+
+    socket.on("connect", refresh);
+    socket.on("order:update", refresh);
+    socket.on("order:new", (o) => {
+      beep();
+      toast.success(`🔔 New order #${o.orderNumber} from ${o.customerName} (${money(o.total)})`);
+      refresh();
+    });
+
+    return () => socket.disconnect();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // While the mobile menu is open: close on Escape and lock page scroll
   useEffect(() => {
@@ -65,7 +108,12 @@ const Layout = () => {
           {links.map((l) => (
             <NavLink key={l.to} to={l.to} className={linkClass} onClick={() => setOpen(false)}>
               <span>{l.icon}</span>
-              {l.label}
+              <span className="flex-1">{l.label}</span>
+              {l.badge && newOrders > 0 && (
+                <span className="bg-red-600 text-white text-xs font-bold rounded-full min-w-6 h-6 px-1.5 flex items-center justify-center">
+                  {newOrders}
+                </span>
+              )}
             </NavLink>
           ))}
         </nav>
@@ -94,10 +142,29 @@ const Layout = () => {
             </button>
             <span className="font-semibold text-gray-800 truncate">{user.shopName}</span>
           </div>
-          <span className="text-sm text-gray-600 whitespace-nowrap hidden sm:inline">
-            👤 {user.name}
-          </span>
+
+          {/* Profile shortcut (top right) */}
+          <Link
+            to="/profile"
+            className="flex items-center gap-2 rounded-full pl-1 pr-3 py-1 hover:bg-green-50 min-w-0"
+            aria-label="Open my profile"
+          >
+            <Avatar src={user.avatar} name={user.name} size={36} />
+            <span className="text-sm font-medium text-gray-700 truncate max-w-28 sm:max-w-40">
+              {user.name}
+            </span>
+          </Link>
         </header>
+        {user.approvalStatus === "pending" && (
+         <p role="status" className="mb-4 bg-orange-50 border border-orange-200 text-orange-800 p-3 rounded-lg text-sm">
+          ⏳ Your shop is waiting for approval. You can use billing and products, but customers cannot see your shop yet.
+         </p>
+        )}
+        {user.approvalStatus === "rejected" && (
+         <p role="alert" className="mb-4 bg-red-50 border border-red-200 text-red-700 p-3 rounded-lg text-sm">
+          Your shop was not approved, so customers cannot see it. Please contact support.
+        </p>
+       )}
 
         <main className="p-4 md:p-6">
           <Outlet />

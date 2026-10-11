@@ -10,21 +10,23 @@ API.interceptors.request.use((config) => {
   return config;
 });
 
+const endSession = () => {
+  localStorage.removeItem("token");
+  localStorage.removeItem("user");
+  window.location.assign("/login");
+};
+
 API.interceptors.response.use(
   (res) => res,
   (error) => {
-    if (!error.response) {
-      // Server is down or there is no internet
+    const res = error.response;
+    const isLogin = error.config?.url?.includes("/api/auth/login");
+
+    if (!res) {
       error.message = "Cannot reach the server. Check your internet connection and try again.";
-    } else if (
-      error.response.status === 401 &&
-      localStorage.getItem("token") &&
-      !error.config.url.includes("/api/auth/login")
-    ) {
-      // Token expired: clear the session and go to login
-      localStorage.removeItem("token");
-      localStorage.removeItem("user");
-      window.location.assign("/login");
+    } else if (!isLogin && localStorage.getItem("token")) {
+      // Token expired, or the admin blocked this account
+      if (res.status === 401 || res.data?.code === "ACCOUNT_BLOCKED") endSession();
     }
     return Promise.reject(error);
   }
