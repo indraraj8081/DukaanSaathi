@@ -22,6 +22,9 @@ const toForm = (p) => ({
   gstin: p.gstin || "",
   acceptingOrders: p.acceptingOrders !== false,
   minOrder: String(p.minOrder ?? 0),
+  deliveryCharge: String(p.deliveryCharge ?? 0),
+  freeDeliveryAbove: String(p.freeDeliveryAbove ?? 0),
+  deliveryPincodes: (p.deliveryPincodes || []).join(", "),
 });
 
 const Row = ({ label, value }) => (
@@ -203,6 +206,9 @@ const Profile = () => {
             <dl className="divide-y">
               <Row label="Accepting orders" value={profile.acceptingOrders ? "Yes, store is open" : "No, store is closed"} />
               <Row label="Minimum order" value={`₹${profile.minOrder || 0}`} />
+              <Row label="Delivery charge" value={`₹${profile.deliveryCharge || 0}`} />
+              <Row label="Free delivery above" value={profile.freeDeliveryAbove > 0 ? `₹${profile.freeDeliveryAbove}` : "Not set"} />
+              <Row label="Delivers to pincodes" value={[profile.pincode, ...(profile.deliveryPincodes || [])].filter(Boolean).join(", ")} />
             </dl>
           </Card>
 
@@ -278,6 +284,21 @@ const Profile = () => {
               <span>Accept online orders (store is open)</span>
             </label>
             <div className="mt-3 max-w-xs">
+              <div className="grid sm:grid-cols-2 gap-3 mt-3">
+              <div>
+                <label className={label}>Delivery charge (₹)</label>
+                <input name="deliveryCharge" type="number" min="0" value={form.deliveryCharge} onChange={handleChange} className={input} />
+              </div>
+              <div>
+                <label className={label}>Free delivery above (₹, 0 = never)</label>
+                <input name="freeDeliveryAbove" type="number" min="0" value={form.freeDeliveryAbove} onChange={handleChange} className={input} />
+              </div>
+              <div className="sm:col-span-2">
+                <label className={label}>Extra pincodes you deliver to</label>
+                <input name="deliveryPincodes" value={form.deliveryPincodes} onChange={handleChange} placeholder="302001, 302002" className={input} />
+                <p className="text-xs text-gray-500 mt-1">Your own pincode is always included. Separate with commas.</p>
+              </div>
+            </div>
               <label className={label}>Minimum order amount (₹)</label>
               <input name="minOrder" type="number" min="0" value={form.minOrder} onChange={handleChange} className={input} />
             </div>

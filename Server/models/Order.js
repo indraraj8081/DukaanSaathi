@@ -19,6 +19,10 @@ const orderSchema = new mongoose.Schema(
     customerName: { type: String, required: true },
     phone: { type: String, required: true },
     address: { type: String, required: true },
+    pincode: { type: String },
+    customerId: { type: mongoose.Schema.Types.ObjectId, ref: "User" }, // empty for guest orders
+    deliveryCharge: { type: Number, default: 0 },
+    total: { type: Number }, // subtotal + deliveryCharge
     note: { type: String },
     items: { type: [orderItemSchema], required: true },
     subtotal: { type: Number, required: true },

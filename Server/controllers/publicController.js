@@ -6,6 +6,7 @@ import Order from "../models/Order.js";
 import Counter from "../models/Counter.js";
 import { emitToShop } from "../socket.js";
 
+
 const escapeRegex = (t) => t.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 const round = (n) => Math.round(n * 100) / 100;
 
@@ -15,22 +16,41 @@ const fail = (status, message) => {
   return err;
 };
 
-const shopFields = "shopName businessType address city pincode phone acceptingOrders minOrder";
+const shopFields =
+  "shopName businessType address city pincode phone acceptingOrders minOrder deliveryCharge freeDeliveryAbove deliveryPincodes";
 
-// GET /api/public/shops?search=
+// A shop delivers to its own pincode plus the extra areas it listed
+const servesPincode = (shop, pincode) =>
+  [shop.pincode, ...(shop.deliveryPincodes || [])].filter(Boolean).includes(pincode);
+
+// Delivery is free above a set amount (0 means it is never free)
+const deliveryFor = (shop, subtotal) =>
+  shop.freeDeliveryAbove > 0 && subtotal >= shop.freeDeliveryAbove ? 0 : shop.deliveryCharge || 0;
+
+// GET /api/public/shops?search=&pincode=&businessType=
 export const listShops = async (req, res) => {
   try {
     // Only shops that have at least one product in stock
     const ownerIds = await Product.distinct("userId", { stock: { $gt: 0 } });
-    const filter = { _id: { $in: ownerIds }, role: "shopkeeper", approvalStatus: "approved" };
 
+    const and = [
+      { _id: { $in: ownerIds } },
+      { role: "shopkeeper" },
+      { approvalStatus: "approved" },
+    ];
+
+    const pincode = String(req.query.pincode || "").trim();
+    if (/^\d{6}$/.test(pincode)) {
+      and.push({ $or: [{ pincode }, { deliveryPincodes: pincode }] });
+    }
+    if (req.query.businessType) and.push({ businessType: String(req.query.businessType) });
     if (req.query.search) {
       const rx = new RegExp(escapeRegex(String(req.query.search)), "i");
-      filter.$or = [{ shopName: rx }, { city: rx }, { pincode: rx }, { businessType: rx }];
+      and.push({ $or: [{ shopName: rx }, { city: rx }, { businessType: rx }] });
     }
 
-    const shops = await User.find(filter)
-      .select("shopName businessType city address acceptingOrders minOrder")
+    const shops = await User.find({ $and: and })
+      .select("shopName businessType city address pincode acceptingOrders minOrder deliveryCharge freeDeliveryAbove")
       .sort({ acceptingOrders: -1, shopName: 1 })
       .limit(60);
     res.json(shops);
@@ -46,10 +66,10 @@ export const getShop = async (req, res) => {
       return res.status(404).json({ message: "Shop not found" });
     }
     const shop = await User.findOne({
-  _id: req.params.shopId,
-  role: "shopkeeper",
-  approvalStatus: "approved",
-  }).select(shopFields);
+      _id: req.params.shopId,
+      role: "shopkeeper",
+      approvalStatus: "approved",
+    }).select(shopFields);
     if (!shop) return res.status(404).json({ message: "Shop not found" });
     res.json(shop);
   } catch (err) {
@@ -70,7 +90,6 @@ export const getShopProducts = async (req, res) => {
     const and = [
       { userId: new mongoose.Types.ObjectId(shopId) },
       { stock: { $gt: 0 } },
-      // hide expired products (no expiry date, or expiry in the future)
       { $or: [{ expiryDate: null }, { expiryDate: { $gt: new Date() } }] },
     ];
     if (req.query.search) {
@@ -82,7 +101,7 @@ export const getShopProducts = async (req, res) => {
     const [total, products, categories] = await Promise.all([
       Product.countDocuments(filter),
       Product.find(filter)
-        .select("name category price stock") // costPrice and others stay private
+        .select("name category price stock") // costPrice stays private
         .sort({ name: 1 })
         .skip((page - 1) * limit)
         .limit(limit),
@@ -95,34 +114,38 @@ export const getShopProducts = async (req, res) => {
   }
 };
 
-// POST /api/public/shops/:shopId/orders
+// POST /api/public/shops/:shopId/orders  (guest or logged-in customer)
 export const createOrder = async (req, res) => {
   try {
     const { shopId } = req.params;
     if (!mongoose.isValidObjectId(shopId)) throw fail(404, "Shop not found");
 
     const shop = await User.findOne({
-    _id: shopId,
-    role: "shopkeeper",
-    approvalStatus: "approved",
-    }).select("shopName acceptingOrders minOrder");
+      _id: shopId,
+      role: "shopkeeper",
+      approvalStatus: "approved",
+    }).select("shopName acceptingOrders minOrder deliveryCharge freeDeliveryAbove pincode deliveryPincodes");
     if (!shop) throw fail(404, "Shop not found");
     if (!shop.acceptingOrders) throw fail(400, "This shop is not accepting orders right now");
 
     const customerName = String(req.body.customerName || "").trim().slice(0, 80);
     const phone = String(req.body.phone || "").trim();
     const address = String(req.body.address || "").trim().slice(0, 300);
+    const pincode = String(req.body.pincode || "").trim();
     const note = String(req.body.note || "").trim().slice(0, 200);
 
     if (!customerName) throw fail(400, "Please enter your name");
     if (!/^[6-9]\d{9}$/.test(phone)) throw fail(400, "Enter a valid 10-digit mobile number");
     if (address.length < 10) throw fail(400, "Please enter your full delivery address");
+    if (!/^\d{6}$/.test(pincode)) throw fail(400, "Enter a valid 6-digit pincode");
+    if (!servesPincode(shop, pincode)) {
+      throw fail(400, `This shop does not deliver to ${pincode}`);
+    }
 
     const rawItems = req.body.items;
     if (!Array.isArray(rawItems) || rawItems.length === 0) throw fail(400, "Your cart is empty");
     if (rawItems.length > 50) throw fail(400, "Too many items in one order");
 
-    // Merge duplicates and validate quantities
     const qtyById = new Map();
     for (const it of rawItems) {
       const qty = Number(it.qty);
@@ -150,6 +173,9 @@ export const createOrder = async (req, res) => {
     const subtotal = round(items.reduce((s, i) => s + i.price * i.qty, 0));
     if (subtotal < shop.minOrder) throw fail(400, `Minimum order for this shop is ₹${shop.minOrder}`);
 
+    const deliveryCharge = deliveryFor(shop, subtotal);
+    const total = round(subtotal + deliveryCharge);
+
     const counter = await Counter.findOneAndUpdate(
       { _id: `order_${shop._id}` },
       { $inc: { seq: 1 } },
@@ -160,21 +186,25 @@ export const createOrder = async (req, res) => {
       userId: shop._id,
       orderNumber: counter.seq,
       trackingCode: crypto.randomBytes(8).toString("hex"),
+      // Link the order to the account only for a logged-in customer
+      customerId: req.user?.role === "customer" ? req.user._id : undefined,
       customerName,
       phone,
       address,
+      pincode,
       note: note || undefined,
       items,
       subtotal,
+      deliveryCharge,
+      total,
       history: [{ status: "placed" }],
     });
 
-    // Live alert to the shopkeeper
     emitToShop(shop._id, "order:new", {
       _id: order._id,
       orderNumber: order.orderNumber,
       customerName,
-      total: subtotal,
+      total,
     });
 
     res.status(201).json({ trackingCode: order.trackingCode, orderNumber: order.orderNumber });
@@ -197,8 +227,11 @@ export const trackOrder = async (req, res) => {
       history: order.history,
       customerName: order.customerName,
       address: order.address,
+      pincode: order.pincode,
       items: order.items.map((i) => ({ name: i.name, qty: i.qty, price: i.price })),
       subtotal: order.subtotal,
+      deliveryCharge: order.deliveryCharge || 0,
+      total: order.total ?? order.subtotal,
       createdAt: order.createdAt,
       shop: { shopName: shop?.shopName, phone: shop?.phone },
     });

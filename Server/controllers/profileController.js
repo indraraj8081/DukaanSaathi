@@ -32,6 +32,12 @@ export const updateProfile = async (req, res) => {
     const gstin = clean(req.body.gstin, 15).toUpperCase();
     const minOrder = Number(req.body.minOrder) || 0;
 
+    const deliveryCharge = Number(req.body.deliveryCharge) || 0;
+    const freeDeliveryAbove = Number(req.body.freeDeliveryAbove) || 0;
+    const deliveryPincodes = [
+      ...new Set(String(req.body.deliveryPincodes || "").split(/[\s,]+/).filter(Boolean)),
+    ];
+
     if (!name) return res.status(400).json({ message: "Full name is required" });
     if (!/^[6-9]\d{9}$/.test(phone)) {
       return res.status(400).json({ message: "Enter a valid 10-digit mobile number" });
@@ -50,12 +56,25 @@ export const updateProfile = async (req, res) => {
       return res.status(400).json({ message: "Minimum order amount is not valid" });
     }
 
+    if (deliveryCharge < 0 || deliveryCharge > 1000) {
+      return res.status(400).json({ message: "Delivery charge must be between 0 and 1000" });
+    }
+    if (freeDeliveryAbove < 0 || freeDeliveryAbove > 100000) {
+      return res.status(400).json({ message: "Free delivery amount is not valid" });
+    }
+    if (deliveryPincodes.length > 30 || deliveryPincodes.some((p) => !/^\d{6}$/.test(p))) {
+      return res.status(400).json({ message: "Delivery pincodes must be 6 digits each (max 30)" });
+    }
+
     const user = await User.findByIdAndUpdate(
       req.user._id,
       {
         $set: {
           name, phone, shopName, businessType, address, city, pincode, gstin,
           minOrder,
+          deliveryCharge,
+          freeDeliveryAbove,
+          deliveryPincodes,
           acceptingOrders: Boolean(req.body.acceptingOrders),
         },
       },

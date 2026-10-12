@@ -34,6 +34,19 @@ const userSchema = new mongoose.Schema(
     city: { type: String, trim: true },
     pincode: { type: String, trim: true },
     gstin: { type: String, trim: true, uppercase: true },
+        // Customer: saved delivery addresses (max 5, enforced in the controller)
+    addresses: [
+      {
+        label: { type: String, trim: true, default: "Home" },
+        line: { type: String, trim: true, required: true },
+        pincode: { type: String, required: true },
+      },
+    ],
+
+    // Shop: delivery settings
+    deliveryCharge: { type: Number, default: 0, min: 0 },
+    freeDeliveryAbove: { type: Number, default: 0, min: 0 }, // 0 means never free
+    deliveryPincodes: { type: [String], default: [] },       // extra areas besides the shop's own pincode
 
     // Online store settings
     acceptingOrders: { type: Boolean, default: true },

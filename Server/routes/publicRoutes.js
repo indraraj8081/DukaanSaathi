@@ -3,6 +3,7 @@ import rateLimit from "express-rate-limit";
 import {
   listShops, getShop, getShopProducts, createOrder, trackOrder,
 } from "../controllers/publicController.js";
+import { optionalAuth } from "../middleware/authMiddleware.js";
 
 const router = express.Router();
 
@@ -18,5 +19,6 @@ router.get("/shops/:shopId", getShop);
 router.get("/shops/:shopId/products", getShopProducts);
 router.post("/shops/:shopId/orders", orderLimiter, createOrder);
 router.get("/orders/:code", trackOrder);
+router.post("/shops/:shopId/orders", orderLimiter, optionalAuth, createOrder);
 
 export default router;

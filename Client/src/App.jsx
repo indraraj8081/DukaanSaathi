@@ -1,7 +1,9 @@
 import { Routes, Route, Navigate } from "react-router-dom";
 import { useAuth } from "./context/AuthContext";
+import { homeFor } from "./utils/roleHome";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
+import CustomerSignup from "./pages/CustomerSignup";
 import Dashboard from "./pages/Dashboard";
 import Billing from "./pages/Billing";
 import Bills from "./pages/Bills";
@@ -14,14 +16,14 @@ import Profile from "./pages/Profile";
 import Shops from "./pages/Shops";
 import ShopStore from "./pages/ShopStore";
 import TrackOrder from "./pages/TrackOrder";
+import MyOrders from "./pages/MyOrders";
+import Account from "./pages/Account";
 import NotFound from "./pages/NotFound";
 import Layout from "./components/Layout";
 import PublicLayout from "./components/PublicLayout";
 import ProtectedRoute from "./components/ProtectedRoute";
 import PublicRoute from "./components/PublicRoute";
-import { homeFor } from "./utils/roleHome";
 
-// Shop owners go to their dashboard, customers see the list of shops
 const Home = () => {
   const { user } = useAuth();
   return <Navigate to={homeFor(user)} replace />;
@@ -34,12 +36,15 @@ function App() {
 
       <Route path="/login" element={<PublicRoute><Login /></PublicRoute>} />
       <Route path="/register" element={<PublicRoute><Register /></PublicRoute>} />
+      <Route path="/signup" element={<PublicRoute><CustomerSignup /></PublicRoute>} />
 
-      {/* Customer side (no login needed) */}
+      {/* Customer side */}
       <Route element={<PublicLayout />}>
         <Route path="/shops" element={<Shops />} />
         <Route path="/shop/:shopId" element={<ShopStore />} />
         <Route path="/track/:code" element={<TrackOrder />} />
+        <Route path="/my-orders" element={<ProtectedRoute roles={["customer"]}><MyOrders /></ProtectedRoute>} />
+        <Route path="/account" element={<ProtectedRoute roles={["customer"]}><Account /></ProtectedRoute>} />
       </Route>
 
       {/* Shop owner side */}

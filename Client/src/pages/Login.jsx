@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import {
   AuthLayout, Field, PasswordField, ErrorBox, SubmitButton, SocialButtons,
@@ -7,7 +7,7 @@ import {
 
 const Login = () => {
   const { login } = useAuth();
-  const navigate = useNavigate();
+  const location = useLocation();
 
   const savedEmail = localStorage.getItem("rememberedEmail") || "";
   const [form, setForm] = useState({ email: savedEmail, password: "" });
@@ -25,7 +25,6 @@ const Login = () => {
       await login(form.email, form.password);
       if (remember) localStorage.setItem("rememberedEmail", form.email);
       else localStorage.removeItem("rememberedEmail");
-      navigate("/dashboard");
     } catch (err) {
       setError(err.response?.data?.message || err.message || "Something went wrong");
     } finally {
@@ -81,9 +80,14 @@ const Login = () => {
       <SocialButtons />
 
       <p className="text-center text-gray-600 mt-6">
-        Don't have an account?{" "}
+        New customer?{" "}
+        <Link to="/signup" state={location.state} className="text-green-700 font-semibold">
+          Create an account
+        </Link>
+        <br />
+        Own a shop?{" "}
         <Link to="/register" className="text-green-700 font-semibold">
-          Sign up
+          Register your shop
         </Link>
       </p>
     </AuthLayout>

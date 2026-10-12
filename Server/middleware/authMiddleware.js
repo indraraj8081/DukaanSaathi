@@ -37,3 +37,17 @@ export const authorize = (...roles) => (req, res, next) => {
   }
   next();
 };
+// Like protect, but never blocks: a guest simply has no req.user
+export const optionalAuth = async (req, res, next) => {
+  try {
+    if (req.headers.authorization?.startsWith("Bearer ")) {
+      const token = req.headers.authorization.split(" ")[1];
+      const decoded = jwt.verify(token, process.env.JWT_SECRET);
+      const user = await User.findById(decoded.id).select("-password -avatar");
+      if (user && user.approvalStatus !== "blocked") req.user = user;
+    }
+  } catch {
+    // bad or expired token: treat the person as a guest
+  }
+  next();
+};

@@ -78,6 +78,7 @@ const TrackOrder = () => {
           ))}
         </ol>
       )}
+      
 
       <div className="bg-white rounded-xl shadow p-4">
         <ul className="text-sm divide-y">
@@ -89,17 +90,26 @@ const TrackOrder = () => {
           ))}
         </ul>
         <div className="flex justify-between font-bold border-t mt-2 pt-2">
-          <span>Total (pay on delivery)</span>
-          <span className="text-green-700">{money(order.subtotal)}</span>
+          <div className="border-t mt-2 pt-2 text-sm space-y-1">
+          <div className="flex justify-between"><span>Items</span><span>{money(order.subtotal)}</span></div>
+          <div className="flex justify-between">
+            <span>Delivery</span>
+            <span>{order.deliveryCharge > 0 ? money(order.deliveryCharge) : "Free"}</span>
+          </div>
+          <div className="flex justify-between font-bold text-base">
+            <span>Total (pay on delivery)</span>
+            <span className="text-green-700">{money(order.total)}</span>
+          </div>
         </div>
-        <p className="text-sm text-gray-600 mt-3 break-words">📍 {order.address}</p>
-      </div>
 
       <p className="text-xs text-gray-500 text-center">Save this page link to check your order again later.</p>
       <div className="text-center">
         <Link to="/shops" className="text-green-700 underline">Order from another shop</Link>
       </div>
     </div>
+    </div>
+    </div>
+
   );
 };
 

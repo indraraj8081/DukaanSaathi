@@ -1,4 +1,4 @@
-import { createContext, useContext, useState } from "react";
+import { createContext, useCallback, useContext, useState } from "react";
 import API from "../api/axios";
 
 const AuthContext = createContext();
@@ -20,10 +20,26 @@ export const AuthProvider = ({ children }) => {
     saveUser(data);
   };
 
+  // Shopkeeper sign up
   const register = async (formData) => {
     const { data } = await API.post("/api/auth/register", formData);
     saveUser(data);
   };
+
+  // Customer sign up
+  const registerCustomer = async (formData) => {
+    const { data } = await API.post("/api/auth/register-customer", formData);
+    saveUser(data);
+  };
+
+  const updateUser = useCallback((patch) => {
+    setUser((prev) => {
+      if (!prev) return prev;
+      const next = { ...prev, ...patch };
+      localStorage.setItem("user", JSON.stringify(next));
+      return next;
+    });
+  }, []);
 
   const logout = () => {
     localStorage.removeItem("token");
@@ -32,7 +48,7 @@ export const AuthProvider = ({ children }) => {
   };
 
   return (
-    <AuthContext.Provider value={{ user, login, register, logout }}>
+    <AuthContext.Provider value={{ user, login, register, registerCustomer, logout, updateUser }}>
       {children}
     </AuthContext.Provider>
   );

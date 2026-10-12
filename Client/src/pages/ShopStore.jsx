@@ -1,12 +1,14 @@
 import { useEffect, useState } from "react";
-import { useNavigate, useParams, Link } from "react-router-dom";
+import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
 import API from "../api/axios";
+import { useAuth } from "../context/AuthContext";
 import { useToast } from "../context/ToastContext";
 import EmptyState from "../components/EmptyState";
 import useDocumentTitle from "../hooks/useDocumentTitle";
 import { money } from "../utils/format";
 
-// Remember the customer's details on this device for next time
+const round = (n) => Math.round(n * 100) / 100;
+
 const loadSaved = () => {
   try {
     return JSON.parse(localStorage.getItem("customerInfo")) || {};
@@ -18,7 +20,10 @@ const loadSaved = () => {
 const ShopStore = () => {
   const { shopId } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
   const toast = useToast();
+  const { user } = useAuth();
+  const isCustomer = user?.role === "customer";
 
   const [shop, setShop] = useState(null);
   const [notFound, setNotFound] = useState(false);
@@ -34,9 +39,17 @@ const ShopStore = () => {
 
   const [cart, setCart] = useState([]);
   const [open, setOpen] = useState(false);
+  const [addresses, setAddresses] = useState([]);
+  const [saveAddress, setSaveAddress] = useState(false);
   const [form, setForm] = useState(() => {
     const s = loadSaved();
-    return { customerName: s.customerName || "", phone: s.phone || "", address: s.address || "", note: "" };
+    return {
+      customerName: (isCustomer ? user.name : s.customerName) || "",
+      phone: (isCustomer ? user.phone : s.phone) || "",
+      address: s.address || "",
+      pincode: localStorage.getItem("pincode") || s.pincode || "",
+      note: "",
+    };
   });
   const [placing, setPlacing] = useState(false);
   const [error, setError] = useState("");
@@ -48,6 +61,12 @@ const ShopStore = () => {
       .then((r) => setShop(r.data))
       .catch(() => setNotFound(true));
   }, [shopId]);
+
+  // Saved addresses exist only for logged-in customers
+  useEffect(() => {
+    if (!isCustomer) return;
+    API.get("/api/account/addresses").then((r) => setAddresses(r.data)).catch(() => {});
+  }, [isCustomer]);
 
   useEffect(() => {
     const t = setTimeout(() => { setDebounced(search); setPage(1); }, 400);
@@ -80,17 +99,34 @@ const ShopStore = () => {
     });
   };
 
+  // These numbers are only for display. The server recalculates everything.
   const itemCount = cart.reduce((s, i) => s + i.qty, 0);
-  const subtotal = Math.round(cart.reduce((s, i) => s + i.price * i.qty, 0) * 100) / 100;
+  const subtotal = round(cart.reduce((s, i) => s + i.price * i.qty, 0));
   const belowMin = shop && subtotal < shop.minOrder;
+  const delivery = shop
+    ? shop.freeDeliveryAbove > 0 && subtotal >= shop.freeDeliveryAbove ? 0 : shop.deliveryCharge || 0
+    : 0;
+  const total = round(subtotal + delivery);
+
+  const pinReady = /^\d{6}$/.test(form.pincode);
+  const served = shop && pinReady
+    ? [shop.pincode, ...(shop.deliveryPincodes || [])].filter(Boolean).includes(form.pincode)
+    : null; // null means "not checked yet"
 
   const handleChange = (e) => setForm({ ...form, [e.target.name]: e.target.value });
+
+  const pickAddress = (id) => {
+    const a = addresses.find((x) => x._id === id);
+    if (a) setForm({ ...form, address: a.line, pincode: a.pincode });
+  };
 
   const placeOrder = async (e) => {
     e.preventDefault();
     setError("");
     if (!/^[6-9]\d{9}$/.test(form.phone)) return setError("Enter a valid 10-digit mobile number");
     if (form.address.trim().length < 10) return setError("Please enter your full delivery address");
+    if (!pinReady) return setError("Enter a valid 6-digit pincode");
+    if (served === false) return setError("This shop does not deliver to your pincode");
 
     setPlacing(true);
     try {
@@ -98,11 +134,19 @@ const ShopStore = () => {
         ...form,
         items: cart.map((i) => ({ productId: i.productId, qty: i.qty })),
       });
+
       try {
+        localStorage.setItem("pincode", form.pincode);
         localStorage.setItem("customerInfo", JSON.stringify({
-          customerName: form.customerName, phone: form.phone, address: form.address,
+          customerName: form.customerName, phone: form.phone, address: form.address, pincode: form.pincode,
         }));
       } catch { /* storage is optional */ }
+
+      if (isCustomer && saveAddress) {
+        // The order is already placed, so a failure here is not worth showing
+        await API.post("/api/account/addresses", { label: "Home", line: form.address, pincode: form.pincode }).catch(() => {});
+      }
+
       toast.success("Order placed!");
       navigate(`/track/${data.trackingCode}`);
     } catch (err) {
@@ -135,7 +179,11 @@ const ShopStore = () => {
           <p className="text-sm text-gray-600 mt-1 break-words">📍 {[shop.address, shop.city, shop.pincode].filter(Boolean).join(", ")}</p>
         )}
         {shop.phone && <a href={`tel:${shop.phone}`} className="text-sm text-green-700 underline">📞 {shop.phone}</a>}
-        {shop.minOrder > 0 && <p className="text-xs text-gray-500 mt-1">Minimum order {money(shop.minOrder)} · Cash on delivery</p>}
+        <p className="text-xs text-gray-500 mt-2">
+          {shop.deliveryCharge > 0 ? `Delivery ${money(shop.deliveryCharge)}` : "Free delivery"}
+          {shop.deliveryCharge > 0 && shop.freeDeliveryAbove > 0 ? ` (free above ${money(shop.freeDeliveryAbove)})` : ""}
+          {shop.minOrder > 0 ? ` · Minimum order ${money(shop.minOrder)}` : ""} · Cash on delivery
+        </p>
         {!shop.acceptingOrders && (
           <p className="mt-2 bg-orange-50 text-orange-800 text-sm p-2 rounded">This shop is not taking orders right now. You can still browse.</p>
         )}
@@ -195,7 +243,6 @@ const ShopStore = () => {
         </>
       )}
 
-      {/* Bottom cart bar */}
       {itemCount > 0 && !open && (
         <div className="fixed bottom-0 inset-x-0 z-20 bg-white border-t shadow px-4 pt-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] flex items-center justify-between">
           <div>
@@ -208,7 +255,6 @@ const ShopStore = () => {
         </div>
       )}
 
-      {/* Cart and checkout */}
       {open && (
         <div className="fixed inset-0 z-40 bg-black/40 flex items-end sm:items-center justify-center">
           <form onSubmit={placeOrder} className="bg-white w-full sm:max-w-lg max-h-[92vh] overflow-y-auto rounded-t-2xl sm:rounded-2xl p-5 space-y-3">
@@ -235,9 +281,19 @@ const ShopStore = () => {
               </ul>
             )}
 
-            <div className="flex justify-between text-lg font-bold border-t pt-2">
-              <span>Total</span>
-              <span className="text-green-700">{money(subtotal)}</span>
+            <div className="border-t pt-2 text-sm space-y-1">
+              <div className="flex justify-between"><span>Items</span><span>{money(subtotal)}</span></div>
+              <div className="flex justify-between">
+                <span>Delivery</span>
+                <span>{delivery === 0 ? "Free" : money(delivery)}</span>
+              </div>
+              {shop.freeDeliveryAbove > 0 && delivery > 0 && (
+                <p className="text-xs text-green-700">Add {money(shop.freeDeliveryAbove - subtotal)} more for free delivery</p>
+              )}
+              <div className="flex justify-between text-lg font-bold border-t pt-2">
+                <span>Total</span>
+                <span className="text-green-700">{money(total)}</span>
+              </div>
             </div>
             <p className="text-xs text-gray-500">Pay cash on delivery. The shopkeeper delivers to you.</p>
 
@@ -246,18 +302,57 @@ const ShopStore = () => {
                 Minimum order is {money(shop.minOrder)}. Add {money(shop.minOrder - subtotal)} more.
               </p>
             )}
+            {served === false && (
+              <p role="alert" className="bg-red-50 text-red-700 text-sm p-2 rounded">
+                This shop does not deliver to {form.pincode}.
+              </p>
+            )}
             {error && <p role="alert" className="bg-red-100 text-red-700 text-sm p-2 rounded">{error}</p>}
+
+            {!user && (
+              <p className="text-sm text-gray-600 bg-green-50 p-2 rounded">
+                Have an account?{" "}
+                <Link to="/login" state={{ from: location.pathname }} className="text-green-700 font-semibold underline">Log in</Link>{" "}
+                to use saved addresses and see your order history.
+              </p>
+            )}
+
+            {isCustomer && addresses.length > 0 && (
+              <select defaultValue="" onChange={(e) => pickAddress(e.target.value)} className={input}>
+                <option value="">Choose a saved address</option>
+                {addresses.map((a) => (
+                  <option key={a._id} value={a._id}>{a.label}: {a.line.slice(0, 40)} ({a.pincode})</option>
+                ))}
+              </select>
+            )}
 
             <input name="customerName" value={form.customerName} onChange={handleChange} required placeholder="Your name" autoComplete="name" className={input} />
             <input name="phone" value={form.phone} onChange={handleChange} required placeholder="Mobile number" type="tel" inputMode="numeric" maxLength={10} autoComplete="tel" className={input} />
             <textarea name="address" value={form.address} onChange={handleChange} required rows={3} placeholder="Full delivery address (house no, street, landmark)" autoComplete="street-address" className={input} />
+            <input
+              name="pincode"
+              value={form.pincode}
+              onChange={(e) => setForm({ ...form, pincode: e.target.value.replace(/\D/g, "").slice(0, 6) })}
+              required
+              placeholder="Pincode"
+              inputMode="numeric"
+              autoComplete="postal-code"
+              className={input}
+            />
             <input name="note" value={form.note} onChange={handleChange} placeholder="Note for the shop (optional)" maxLength={200} className={input} />
 
+            {isCustomer && (
+              <label className="flex items-center gap-2 text-sm text-gray-700">
+                <input type="checkbox" checked={saveAddress} onChange={(e) => setSaveAddress(e.target.checked)} className="w-4 h-4 accent-green-700" />
+                Save this address for next time
+              </label>
+            )}
+
             <button
-              disabled={placing || cart.length === 0 || belowMin || !shop.acceptingOrders}
+              disabled={placing || cart.length === 0 || belowMin || served === false || !shop.acceptingOrders}
               className="w-full bg-green-600 text-white py-3 rounded-lg text-lg font-semibold hover:bg-green-700 disabled:opacity-50"
             >
-              {placing ? "Placing order..." : `Place Order · ${money(subtotal)}`}
+              {placing ? "Placing order..." : `Place Order · ${money(total)}`}
             </button>
           </form>
         </div>

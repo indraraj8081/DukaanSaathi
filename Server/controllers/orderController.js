@@ -122,7 +122,8 @@ export const updateOrderStatus = async (req, res) => {
               discount: 0,
               gstRate: 0,
               gst: 0,
-              total: order.subtotal,
+              deliveryCharge: order.deliveryCharge || 0,
+              total: order.total ?? order.subtotal,
               paymentMode: "cash", // cash on delivery
               customerName: order.customerName,
             },

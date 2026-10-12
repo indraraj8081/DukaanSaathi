@@ -164,14 +164,20 @@ const Orders = () => {
                   ))}
                 </ul>
 
-                <div className="flex justify-between font-bold border-t mt-2 pt-2">
-                  <span>Total (Cash on delivery)</span>
-                  <span className="text-green-700">{money(o.subtotal)}</span>
+                <div className="border-t mt-2 pt-2 text-sm space-y-1">
+                  <div className="flex justify-between"><span>Items</span><span>{money(o.subtotal)}</span></div>
+                  {o.deliveryCharge > 0 && (
+                    <div className="flex justify-between"><span>Delivery charge</span><span>{money(o.deliveryCharge)}</span></div>
+                  )}
+                  <div className="flex justify-between font-bold text-base">
+                    <span>Collect (cash on delivery)</span>
+                    <span className="text-green-700">{money(o.total ?? o.subtotal)}</span>
+                  </div>
                 </div>
 
                 <div className="mt-3 text-sm space-y-1">
-                  <p className="break-words">📍 {o.address}</p>
-                  {o.note && <p className="text-gray-600 break-words">📝 {o.note}</p>}
+                  <p className="wrap-break-words">📍 {o.address}</p>
+                  {o.note && <p className="text-gray-600 wrap-break-words">📝 {o.note}</p>}
                   <div className="flex flex-wrap gap-3">
                     <a href={`tel:${o.phone}`} className="text-green-700 underline">📞 {o.phone}</a>
                     <a

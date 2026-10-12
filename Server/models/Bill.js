@@ -13,13 +13,18 @@ const billItemSchema = new mongoose.Schema(
 
 const billSchema = new mongoose.Schema(
   {
-    userId: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
+    userId: { 
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      required: true 
+    },
     billNumber: { type: Number, required: true },
     items: { type: [billItemSchema], required: true },
     subtotal: { type: Number, required: true },
     discount: { type: Number, default: 0 },
     gstRate: { type: Number, default: 0 },
     gst: { type: Number, default: 0 },
+    deliveryCharge: { type: Number, default: 0 },
     total: { type: Number, required: true },
     customerId: { type: mongoose.Schema.Types.ObjectId, ref: "Customer" },
     customerName: { type: String },
