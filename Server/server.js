@@ -15,7 +15,7 @@ import supplierRoutes from "./routes/supplierRoutes.js";
 import profileRoutes from "./routes/profileRoutes.js";
 import orderRoutes from "./routes/orderRoutes.js";
 import publicRoutes from "./routes/publicRoutes.js";
-import accountRoutes from "./routes/accountRoutes.js";
+import adminRoutes from "./routes/adminRoutes.js";
 
 dotenv.config();
 connectDB();
@@ -40,7 +40,7 @@ app.use("/api/suppliers", supplierRoutes);
 app.use("/api/profile", profileRoutes);
 app.use("/api/orders", orderRoutes);
 app.use("/api/public", publicRoutes);
-app.use("/api/account", accountRoutes);
+app.use("/api/admin", adminRoutes);
 
 const server = http.createServer(app);
 initSocket(server);

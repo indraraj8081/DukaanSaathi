@@ -5,12 +5,15 @@ import Bill from "../models/Bill.js";
 import Counter from "../models/Counter.js";
 import { emitToShop } from "../socket.js";
 
-const STATUSES = ["placed", "accepted", "out_for_delivery", "delivered", "rejected", "cancelled"];
+const STATUSES = [
+  "placed", "accepted", "preparing", "out_for_delivery", "delivered", "rejected", "cancelled",
+];
 
 // Which status can move to which
 const FLOW = {
   placed: ["accepted", "rejected"],
-  accepted: ["out_for_delivery", "cancelled"],
+  accepted: ["preparing", "out_for_delivery", "cancelled"], // packing step can be skipped
+  preparing: ["out_for_delivery", "cancelled"],
   out_for_delivery: ["delivered", "cancelled"],
 };
 

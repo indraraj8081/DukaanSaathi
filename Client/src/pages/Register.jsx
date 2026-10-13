@@ -1,90 +1,79 @@
 import { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { useToast } from "../context/ToastContext";
-import {
-  AuthLayout, Field, PasswordField, ErrorBox, SubmitButton, SocialButtons,
-} from "../components/AuthUI";
+import useDocumentTitle from "../hooks/useDocumentTitle";
+import AuthShell from "../components/AuthShell";
+import { Field, PasswordField, ErrorBox } from "../components/AuthUI";
+import { TYPES } from "../utils/shopTypes";
 
 const Register = () => {
-  const toast = useToast();
+  useDocumentTitle("Register your shop");
   const { register } = useAuth();
-  const navigate = useNavigate();
-  const [form, setForm] = useState({
-    name: "", shopName: "", email: "", phone: "", password: "", confirmPassword: "",
+  const toast = useToast();
+  const [f, setF] = useState({
+    shopName: "", name: "", phone: "", email: "", address: "",
+    businessType: "", password: "", confirmPassword: "",
   });
+  const [agree, setAgree] = useState(false);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
-  const handleChange = (e) => setForm({ ...form, [e.target.name]: e.target.value });
+  const change = (e) => setF({ ...f, [e.target.name]: e.target.value });
 
-  const handleSubmit = async (e) => {
+  const submit = async (e) => {
     e.preventDefault();
     setError("");
-
-    if (!/^[6-9]\d{9}$/.test(form.phone)) {
-      return setError("Enter a valid 10-digit mobile number");
-    }
-    if (form.password.length < 6) {
-      return setError("Password must be at least 6 characters");
-    }
-    if (form.password !== form.confirmPassword) {
-      return setError("Passwords do not match");
-    }
+    if (!/^[6-9]\d{9}$/.test(f.phone)) return setError("Enter a valid 10-digit mobile number");
+    if (f.address.trim().length < 10) return setError("Please enter your full shop address");
+    if (f.password.length < 6) return setError("Password must be at least 6 characters");
+    if (f.password !== f.confirmPassword) return setError("Passwords do not match");
 
     setLoading(true);
     try {
-      const { confirmPassword, ...payload } = form; // server does not need this
+      const { confirmPassword, ...payload } = f;
       await register(payload);
-      toast.success("Account created. Your shop will be visible to customers after approval.");
-      navigate("/dashboard");
+      toast.success("Shop registered. It will be visible to customers after admin approval.");
     } catch (err) {
       setError(err.response?.data?.message || err.message || "Something went wrong");
-    } finally {
       setLoading(false);
     }
   };
 
   return (
-    <AuthLayout
-      heading="Shuru Kare Apni Digital Dukaan"
-      intro="Dukan Saathi ke saath apni dukan ko aur smarter banaye."
-    >
-      <h2 className="text-2xl font-bold text-gray-900">Create Your Account</h2>
-      <p className="text-gray-500 mt-1 mb-6">
-        Kuch hi steps me apni dukan ko digital banaye.
-      </p>
+    <AuthShell art="👨‍🍳" points={[["🌐", "Get Online Presence"], ["👥", "More Customers"], ["📋", "Manage Orders Easily"], ["📈", "Grow Your Business"]]}>
+      <h1 className="text-2xl font-bold text-gray-900">Register Your Shop</h1>
+      <p className="text-gray-500 mt-1 mb-5">Apni shop ki details bharein aur approval ke baad apni digital dukan shuru karein.</p>
 
-      <form onSubmit={handleSubmit} className="space-y-4">
+      <form onSubmit={submit} className="space-y-3">
         <ErrorBox message={error} />
-
-        <Field icon="👤" name="name" placeholder="Full Name" autoComplete="name"
-          value={form.name} onChange={handleChange} required />
-        <Field icon="🏪" name="shopName" placeholder="Shop Name (Dukan ka naam)"
-          autoComplete="organization" value={form.shopName} onChange={handleChange} required />
-        <Field icon="✉️" type="email" name="email" placeholder="Email address"
-          autoComplete="email" value={form.email} onChange={handleChange} required />
-        <Field icon="📞" type="tel" name="phone" placeholder="Mobile Number"
-          autoComplete="tel" inputMode="numeric" maxLength={10}
-          value={form.phone} onChange={handleChange} required />
-        <PasswordField name="password" placeholder="Password" autoComplete="new-password"
-          value={form.password} onChange={handleChange} required minLength={6} />
-        <PasswordField name="confirmPassword" placeholder="Confirm Password"
-          autoComplete="new-password" value={form.confirmPassword}
-          onChange={handleChange} required />
-
-        <SubmitButton loading={loading}>Create Account →</SubmitButton>
+        <Field icon="🏪" name="shopName" placeholder="Shop name" value={f.shopName} onChange={change} required />
+        <Field icon="👤" name="name" placeholder="Owner name" autoComplete="name" value={f.name} onChange={change} required />
+        <Field icon="📞" type="tel" name="phone" placeholder="Mobile number" inputMode="numeric" maxLength={10} value={f.phone} onChange={change} required />
+        <Field icon="✉️" type="email" name="email" placeholder="Email address" autoComplete="email" value={f.email} onChange={change} required />
+        <textarea name="address" value={f.address} onChange={change} required rows={3}
+          placeholder="Shop address (complete)" className="w-full border border-gray-300 rounded-lg p-3" />
+        <select name="businessType" value={f.businessType} onChange={change} required
+          className="w-full border border-gray-300 rounded-lg p-3 bg-white">
+          <option value="">Shop category</option>
+          {TYPES.map(([name]) => <option key={name} value={name}>{name}</option>)}
+        </select>
+        <PasswordField name="password" placeholder="Create password" autoComplete="new-password" value={f.password} onChange={change} required minLength={6} />
+        <PasswordField name="confirmPassword" placeholder="Confirm password" autoComplete="new-password" value={f.confirmPassword} onChange={change} required />
+        <label className="flex items-start gap-2 text-sm text-gray-700">
+          <input type="checkbox" checked={agree} onChange={(e) => setAgree(e.target.checked)} required className="w-4 h-4 mt-0.5 accent-orange-500" />
+          I agree to the Terms &amp; Conditions
+        </label>
+        <button disabled={loading || !agree} className="w-full bg-orange-500 text-white py-3 rounded-lg font-semibold hover:bg-orange-600 disabled:opacity-60">
+          {loading ? "Please wait..." : "Submit Shop Registration →"}
+        </button>
+        <p className="text-xs text-gray-500 text-center">After submission, your shop will be reviewed and approved by admin.</p>
       </form>
 
-      <SocialButtons />
-
-      <p className="text-center text-gray-600 mt-6">
-        Already have an account?{" "}
-        <Link to="/login" className="text-green-700 font-semibold">
-          Login
-        </Link>
+      <p className="mt-4 text-center text-sm text-gray-600">
+        Already registered? <Link to="/shop-login" className="text-green-700 font-semibold">Shop owner login</Link>
       </p>
-    </AuthLayout>
+    </AuthShell>
   );
 };
 

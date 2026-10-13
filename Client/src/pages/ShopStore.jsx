@@ -169,14 +169,14 @@ const ShopStore = () => {
 
       <div className="bg-white rounded-xl shadow p-4">
         <div className="flex items-start justify-between gap-2">
-          <h1 className="text-2xl font-bold text-gray-800 break-words min-w-0">{shop.shopName}</h1>
+          <h1 className="text-2xl font-bold text-gray-800 wrap-break-words min-w-0">{shop.shopName}</h1>
           <span className={`text-xs font-medium px-2 py-1 rounded whitespace-nowrap ${shop.acceptingOrders ? "bg-green-100 text-green-700" : "bg-gray-200 text-gray-600"}`}>
             {shop.acceptingOrders ? "Open" : "Closed"}
           </span>
         </div>
         {shop.businessType && <p className="text-sm text-gray-500">{shop.businessType}</p>}
         {(shop.address || shop.city) && (
-          <p className="text-sm text-gray-600 mt-1 break-words">📍 {[shop.address, shop.city, shop.pincode].filter(Boolean).join(", ")}</p>
+          <p className="text-sm text-gray-600 mt-1 wrap-break-words">📍 {[shop.address, shop.city, shop.pincode].filter(Boolean).join(", ")}</p>
         )}
         {shop.phone && <a href={`tel:${shop.phone}`} className="text-sm text-green-700 underline">📞 {shop.phone}</a>}
         <p className="text-xs text-gray-500 mt-2">
@@ -208,7 +208,7 @@ const ShopStore = () => {
               const q = qtyOf(p._id);
               return (
                 <div key={p._id} className="bg-white rounded-xl shadow p-3 flex flex-col">
-                  <p className="font-semibold text-gray-800 break-words">{p.name}</p>
+                  <p className="font-semibold text-gray-800 wrap-break-words">{p.name}</p>
                   <p className="text-xs text-gray-500">{p.category}</p>
                   <p className="text-green-700 font-bold mt-1">{money(p.price)}</p>
                   {p.stock <= 5 && <p className="text-xs text-orange-600">Only {p.stock} left</p>}
@@ -269,7 +269,7 @@ const ShopStore = () => {
               <ul className="divide-y text-sm">
                 {cart.map((i) => (
                   <li key={i.productId} className="py-2 flex items-center justify-between gap-2">
-                    <span className="break-words min-w-0 flex-1">{i.name}</span>
+                    <span className="wrap-break-words min-w-0 flex-1">{i.name}</span>
                     <div className="flex items-center gap-2">
                       <button type="button" onClick={() => setQty(i, i.qty - 1)} className="w-8 h-8 border rounded">−</button>
                       <span className="w-6 text-center">{i.qty}</span>

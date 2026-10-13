@@ -181,10 +181,17 @@ export const createOrder = async (req, res) => {
       { $inc: { seq: 1 } },
       { new: true, upsert: true }
     );
+    // One counter for the whole platform, so every order gets a unique public number
+    const publicCounter = await Counter.findOneAndUpdate(
+      { _id: "order_public" },
+      { $inc: { seq: 1 } },
+      { new: true, upsert: true }
+    );
 
     const order = await Order.create({
       userId: shop._id,
       orderNumber: counter.seq,
+      publicNumber: 10000 + publicCounter.seq,
       trackingCode: crypto.randomBytes(8).toString("hex"),
       // Link the order to the account only for a logged-in customer
       customerId: req.user?.role === "customer" ? req.user._id : undefined,
@@ -223,6 +230,7 @@ export const trackOrder = async (req, res) => {
 
     res.json({
       orderNumber: order.orderNumber,
+      publicNumber: order.publicNumber,
       status: order.status,
       history: order.history,
       customerName: order.customerName,

@@ -30,7 +30,7 @@ const toForm = (p) => ({
 const Row = ({ label, value }) => (
   <div className="py-2 sm:grid sm:grid-cols-3 sm:gap-4">
     <dt className="text-sm text-gray-500">{label}</dt>
-    <dd className="sm:col-span-2 text-gray-800 break-words">
+    <dd className="sm:col-span-2 text-gray-800 wrap-break-words">
       {value || <span className="text-gray-400">Not added</span>}
     </dd>
   </div>
@@ -150,8 +150,8 @@ const Profile = () => {
       <section className="bg-white rounded-xl shadow p-4 sm:p-6 flex flex-col sm:flex-row sm:items-center gap-4">
         <Avatar src={profile.avatar} name={profile.name} size={96} />
         <div className="flex-1 min-w-0">
-          <h1 className="text-2xl font-bold text-gray-800 break-words">{profile.name}</h1>
-          <p className="text-gray-600 break-words">{profile.shopName}</p>
+          <h1 className="text-2xl font-bold text-gray-800 wrap-break-words">{profile.name}</h1>
+          <p className="text-gray-600 wrap-break-words">{profile.shopName}</p>
           <span className="inline-block mt-1 text-xs font-medium bg-green-100 text-green-700 px-2 py-1 rounded capitalize">
             Shop {profile.role}
           </span>

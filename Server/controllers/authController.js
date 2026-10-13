@@ -15,12 +15,25 @@ const userPayload = (user) => ({
 
 // POST /api/auth/register  (shopkeepers only; customers get their own route in Step B)
 export const registerUser = async (req, res) => {
+  const BUSINESS_TYPES = [
+  "Kirana / Grocery", "Medical / Pharmacy", "Stationery", "Bakery", "Dairy",
+  "Vegetables & Fruits", "General Store", "Electronics", "Clothing", "Other",
+  ];
   try {
     const name = String(req.body.name || "").trim();
     const shopName = String(req.body.shopName || "").trim();
     const email = String(req.body.email || "").toLowerCase().trim();
     const phone = String(req.body.phone || "").trim();
     const password = String(req.body.password || "");
+
+    const address = String(req.body.address || "").trim().slice(0, 300);
+    const businessType = String(req.body.businessType || "").trim();
+    if (!BUSINESS_TYPES.includes(businessType)) {
+      return res.status(400).json({ message: "Please choose a shop category" });
+    }
+    if (address.length < 10) {
+      return res.status(400).json({ message: "Please enter your full shop address" });
+    }
 
     if (!name || !shopName || !email || !phone || !password) {
       return res.status(400).json({ message: "Please fill in all fields" });
@@ -73,6 +86,12 @@ export const loginUser = async (req, res) => {
         code: "ACCOUNT_BLOCKED",
       });
     }
+    const expected = req.body.expectedRole;
+    if (expected && user.role !== expected) {
+      return res.status(403).json({
+        message: `This is not a ${expected} account. Please use the correct login page.`,
+      });
+    }
 
     res.json(userPayload(user));
   } catch (error) {
@@ -102,7 +121,7 @@ export const registerCustomer = async (req, res) => {
 
     // Role is fixed by the server, customers need no approval
     const user = await User.create({
-      name, email, phone, password, role: "customer", approvalStatus: "approved",
+      name, email, phone, password, address,businessType, role: "customer", approvalStatus: "approved",
     });
     res.status(201).json(userPayload(user));
   } catch (error) {

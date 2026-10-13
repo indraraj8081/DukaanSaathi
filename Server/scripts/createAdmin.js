@@ -5,6 +5,7 @@ import User from "../models/User.js";
 dotenv.config();
 
 const [email, password, name = "Platform Admin"] = process.argv.slice(2);
+
 if (!email || !password) {
   console.log("Usage: node scripts/createAdmin.js <email> <password> [name]");
   process.exit(1);
@@ -29,4 +30,5 @@ if (exists) {
   });
   console.log(`Admin created: ${email}`);
 }
+
 await mongoose.disconnect();

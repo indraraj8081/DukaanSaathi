@@ -16,6 +16,7 @@ const orderSchema = new mongoose.Schema(
     userId: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true }, // the shop
     orderNumber: { type: Number, required: true },
     trackingCode: { type: String, required: true, unique: true },
+    publicNumber: { type: Number}, // for customers, starts from 1 for each shop
     customerName: { type: String, required: true },
     phone: { type: String, required: true },
     address: { type: String, required: true },
@@ -29,7 +30,7 @@ const orderSchema = new mongoose.Schema(
     paymentMode: { type: String, default: "cod" },
     status: {
       type: String,
-      enum: ["placed", "accepted", "out_for_delivery", "delivered", "rejected", "cancelled"],
+      enum: ["placed", "accepted", "preparing", "out_for_delivery", "delivered", "rejected", "cancelled"],
       default: "placed",
     },
     history: [{ status: String, at: { type: Date, default: Date.now }, _id: false }],

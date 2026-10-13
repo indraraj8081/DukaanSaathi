@@ -1,4 +1,6 @@
 // Where each kind of user lands after login
-export const homeFor = (user) =>
-  user?.role === "shopkeeper" ? "/dashboard" : "/shops";
-// Admin gets its own home in Step F
+export const homeFor = (user) => {
+  if (user?.role === "admin") return "/admin";
+  if (user?.role === "shopkeeper") return "/dashboard";
+  return "/shops";
+};

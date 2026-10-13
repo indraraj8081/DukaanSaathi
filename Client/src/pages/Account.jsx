@@ -57,8 +57,8 @@ const Account = () => {
       <h1 className="text-2xl font-bold text-gray-800">My Account</h1>
 
       <section className="bg-white rounded-xl shadow p-4">
-        <p className="font-semibold text-gray-800 break-words">{user.name}</p>
-        <p className="text-sm text-gray-600 break-all">{user.email}</p>
+        <p className="font-semibold text-gray-800 wrap-break-words">{user.name}</p>
+        <p className="text-sm text-gray-600 wrap-break-words">{user.email}</p>
         <p className="text-sm text-gray-600">{user.phone}</p>
       </section>
 
@@ -72,7 +72,7 @@ const Account = () => {
               <li key={a._id} className="py-3 flex items-start justify-between gap-3">
                 <div className="min-w-0">
                   <p className="font-medium">{a.label}</p>
-                  <p className="text-sm text-gray-600 break-words">{a.line} - {a.pincode}</p>
+                  <p className="text-sm text-gray-600 wrap-break-words">{a.line} - {a.pincode}</p>
                 </div>
                 <button onClick={() => remove(a._id)} className="text-red-600 text-sm whitespace-nowrap">Delete</button>
               </li>

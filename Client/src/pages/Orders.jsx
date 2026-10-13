@@ -5,18 +5,20 @@ import { useAuth } from "../context/AuthContext";
 import useDocumentTitle from "../hooks/useDocumentTitle";
 import EmptyState from "../components/EmptyState";
 import StoreLink from "../components/StoreLink";
-import { money } from "../utils/format";
-
+import { money, orderLabel } from "../utils/format";
 const TABS = [
   { key: "new", label: "New", statuses: "placed" },
   { key: "active", label: "Active", statuses: "accepted,out_for_delivery" },
   { key: "done", label: "Delivered", statuses: "delivered" },
   { key: "closed", label: "Closed", statuses: "rejected,cancelled" },
+  { key: "active", label: "Active", statuses: "accepted,preparing,out_for_delivery" },
 ];
 
 const STATUS_STYLE = {
   placed: ["New", "bg-orange-100 text-orange-700"],
   accepted: ["Accepted", "bg-blue-100 text-blue-700"],
+  confirmed: ["Confirmed", "bg-blue-100 text-blue-700"],
+  preparing: ["Preparing", "bg-yellow-100 text-yellow-700"],
   out_for_delivery: ["Out for delivery", "bg-purple-100 text-purple-700"],
   delivered: ["Delivered", "bg-green-100 text-green-700"],
   rejected: ["Rejected", "bg-red-100 text-red-700"],
@@ -24,17 +26,23 @@ const STATUS_STYLE = {
 };
 
 // Next actions for each status: [label, new status, style, needs confirm]
+// Next actions for each status: [label, new status, style, needs confirm]
 const ACTIONS = {
   placed: [
-    ["Accept", "accepted", "bg-green-600 text-white", false],
+    ["Accept order", "accepted", "bg-green-600 text-white", false],
     ["Reject", "rejected", "border border-red-200 text-red-600", true],
   ],
   accepted: [
+    ["Start preparing", "preparing", "bg-yellow-500 text-white", false],
+    ["Out for delivery", "out_for_delivery", "bg-purple-600 text-white", false],
+    ["Cancel", "cancelled", "border border-red-200 text-red-600", true],
+  ],
+  preparing: [
     ["Out for delivery", "out_for_delivery", "bg-purple-600 text-white", false],
     ["Cancel", "cancelled", "border border-red-200 text-red-600", true],
   ],
   out_for_delivery: [
-    ["Mark delivered", "delivered", "bg-green-600 text-white", false],
+    ["Mark as delivered", "delivered", "bg-green-600 text-white", false],
     ["Cancel", "cancelled", "border border-red-200 text-red-600", true],
   ],
 };
@@ -96,7 +104,7 @@ const Orders = () => {
 
   const tabCount = (key) => {
     if (key === "new") return counts.placed || 0;
-    if (key === "active") return (counts.accepted || 0) + (counts.out_for_delivery || 0);
+    if (key === "active") return (counts.accepted || 0) + (counts.preparing || 0) + (counts.out_for_delivery || 0);
     return 0;
   };
 
@@ -146,7 +154,9 @@ const Orders = () => {
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0">
                     <p className="font-semibold text-gray-800">
-                      Order #{o.orderNumber} <span className="font-normal text-gray-500">· {o.customerName}</span>
+                      Order #{o.orderNumber}{" "}
+                      {o.publicNumber && <span className="text-xs font-normal text-gray-500">(DS{o.publicNumber})</span>}{" "}
+                      <span className="font-normal text-gray-500">· {o.customerName}</span>
                     </p>
                     <p className="text-xs text-gray-500">{fmt(o.createdAt)}</p>
                   </div>
@@ -158,7 +168,7 @@ const Orders = () => {
                 <ul className="mt-3 text-sm divide-y">
                   {o.items.map((i) => (
                     <li key={i.productId} className="py-1 flex justify-between gap-3">
-                      <span className="break-words min-w-0">{i.name} × {i.qty}</span>
+                      <span className="wrap-break-words min-w-0">{i.name} × {i.qty}</span>
                       <span className="whitespace-nowrap">{money(i.price * i.qty)}</span>
                     </li>
                   ))}

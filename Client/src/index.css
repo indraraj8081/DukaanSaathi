@@ -25,3 +25,11 @@ video {
     font-size: 16px;
   }
 }
+
+/* Hides the scrollbar on the category chips (arrows are used instead) */
+.no-scrollbar {
+  scrollbar-width: none;
+}
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}

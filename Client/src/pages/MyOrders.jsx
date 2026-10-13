@@ -4,11 +4,13 @@ import API from "../api/axios";
 import EmptyState from "../components/EmptyState";
 import { useToast } from "../context/ToastContext";
 import useDocumentTitle from "../hooks/useDocumentTitle";
-import { money } from "../utils/format";
+
+import { money, orderLabel } from "../utils/format";
 
 const STATUS = {
   placed: ["Placed", "bg-orange-100 text-orange-700"],
   accepted: ["Confirmed", "bg-blue-100 text-blue-700"],
+  preparing: ["Preparing", "bg-yellow-100 text-yellow-700"],
   out_for_delivery: ["Out for delivery", "bg-purple-100 text-purple-700"],
   delivered: ["Delivered", "bg-green-100 text-green-700"],
   rejected: ["Rejected", "bg-red-100 text-red-700"],
@@ -39,7 +41,7 @@ const MyOrders = () => {
   useEffect(() => { load(); }, [load]);
 
   const cancel = async (o) => {
-    if (!window.confirm(`Cancel order #${o.orderNumber}?`)) return;
+    if (!window.confirm(`Cancel order #${orderLabel(o)}?`)) return;
     setBusyId(o._id);
     try {
       await API.post(`/api/account/orders/${o._id}/cancel`);
@@ -69,7 +71,7 @@ const MyOrders = () => {
             <div key={o._id} className="bg-white rounded-xl shadow p-4">
               <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0">
-                  <p className="font-semibold text-gray-800 break-words">{o.shop.shopName}</p>
+                  <p className="font-semibold text-gray-800 wrap-break-words">{o.shop.shopName}</p>
                   <p className="text-xs text-gray-500">
                     Order #{o.orderNumber} · {new Date(o.createdAt).toLocaleString("en-IN", { dateStyle: "medium", timeStyle: "short" })}
                   </p>
@@ -77,7 +79,7 @@ const MyOrders = () => {
                 <span className={`text-xs font-medium px-2 py-1 rounded whitespace-nowrap ${style}`}>{label}</span>
               </div>
 
-              <p className="text-sm text-gray-600 mt-2 break-words">
+              <p className="text-sm text-gray-600 mt-2 wrap-break-words">
                 {o.items.map((i) => `${i.name} × ${i.qty}`).join(", ")}
               </p>
               <p className="font-bold mt-2">

@@ -66,6 +66,7 @@ export const getMyOrders = async (req, res) => {
       orders.map((o) => ({
         _id: o._id,
         orderNumber: o.orderNumber,
+        publicNumber: o.publicNumber,
         trackingCode: o.trackingCode,
         status: o.status,
         items: o.items.map((i) => ({ name: i.name, qty: i.qty, price: i.price })),
