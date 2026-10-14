@@ -20,44 +20,44 @@ const features = [
   { icon: "☁️", title: "Kabhi bhi, Kahin bhi", text: "Mobile aur Desktop dono par" },
 ];
 
+// No logo or page frame here: the navbar and footer come from PublicLayout
 export const AuthLayout = ({ heading, intro, children }) => (
-  <div className="min-h-dvh bg-gradient-to-br from-green-50 via-white to-green-100 lg:grid lg:grid-cols-2">
-    {/* Left: branding */}
-    <section className="px-6 pt-6 lg:p-12 lg:flex lg:flex-col">
-      <Logo />
+  <div className="rounded-3xl overflow-hidden bg-gradient-to-br from-green-50 via-white to-green-100 shadow-sm lg:grid lg:grid-cols-2">
+    <section className="hidden lg:block p-10 xl:p-12">
+      <h1 className="text-4xl xl:text-5xl font-extrabold text-gray-900 leading-tight">{heading}</h1>
+      <p className="mt-4 text-lg text-gray-600 max-w-md">{intro}</p>
 
-      <div className="hidden lg:block mt-12">
-        <h1 className="text-4xl xl:text-5xl font-extrabold text-gray-900 leading-tight">
-          {heading}
-        </h1>
-        <p className="mt-4 text-lg text-gray-600 max-w-md">{intro}</p>
+      <ul className="mt-8 space-y-4">
+        {features.map((f) => (
+          <li key={f.title} className="flex items-center gap-4">
+            <span className="w-12 h-12 rounded-full bg-white shadow flex items-center justify-center text-2xl">
+              {f.icon}
+            </span>
+            <div>
+              <p className="font-semibold text-gray-800">{f.title}</p>
+              <p className="text-sm text-gray-600">{f.text}</p>
+            </div>
+          </li>
+        ))}
+      </ul>
 
-        <ul className="mt-8 space-y-4">
-          {features.map((f) => (
-            <li key={f.title} className="flex items-center gap-4">
-              <span className="w-12 h-12 rounded-full bg-white shadow flex items-center justify-center text-2xl">
-                {f.icon}
-              </span>
-              <div>
-                <p className="font-semibold text-gray-800">{f.title}</p>
-                <p className="text-sm text-gray-600">{f.text}</p>
-              </div>
-            </li>
-          ))}
-        </ul>
-
-        <p className="mt-10 text-8xl" aria-hidden="true">🏪</p>
-      </div>
+      <p className="mt-8 text-8xl" aria-hidden="true">🏪</p>
     </section>
 
-    {/* Right: form card */}
-    <section className="flex items-center justify-center p-4 sm:p-6 lg:p-12">
-      <div className="w-full max-w-md bg-white rounded-2xl shadow-lg p-6 sm:p-8">
-        {children}
-      </div>
+    <section className="flex items-center justify-center p-4 sm:p-8">
+      <div className="w-full max-w-md bg-white rounded-2xl shadow-lg p-6 sm:p-8">{children}</div>
     </section>
   </div>
 );
+
+//     {/* Right: form card */}
+//     <section className="flex items-center justify-center p-4 sm:p-6 lg:p-12">
+//       <div className="w-full max-w-md bg-white rounded-2xl shadow-lg p-6 sm:p-8">
+//         {children}
+//       </div>
+//     </section>
+//   </div>
+// );
 
 export const Field = ({ icon, right, ...props }) => (
   <div className="relative">
