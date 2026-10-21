@@ -1,5 +1,8 @@
 import User from "../models/User.js";
 import generateToken from "../utils/generateToken.js";
+import crypto from "crypto";
+import bcrypt from "bcryptjs";
+import { sendEmail } from "../utils/sendEmail.js";
 
 // One place that decides what the frontend receives about a user
 const userPayload = (user) => ({
@@ -132,4 +135,80 @@ export const registerCustomer = async (req, res) => {
 // GET /api/auth/me (protected)
 export const getMe = async (req, res) => {
   res.json(req.user);
+};
+
+const hashToken = (token) => crypto.createHash("sha256").update(token).digest("hex");
+
+const escapeHtml = (s) => String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+
+// POST /api/auth/forgot-password  { email }
+export const forgotPassword = async (req, res) => {
+  // Same answer every time, so nobody can find out which emails exist
+  const reply = () =>
+    res.json({ message: "If this email is registered, a reset link has been sent. It is valid for 30 minutes." });
+
+  try {
+    const email = String(req.body.email || "").toLowerCase().trim();
+    if (!email) return res.status(400).json({ message: "Please enter your email" });
+
+    const user = await User.findOne({ email });
+    if (!user || user.approvalStatus === "blocked") return reply();
+
+    const token = crypto.randomBytes(32).toString("hex");
+
+    // updateOne avoids re-validating old accounts that miss newer fields
+    await User.updateOne(
+      { _id: user._id },
+      { $set: { resetTokenHash: hashToken(token), resetTokenExpires: new Date(Date.now() + 30 * 60 * 1000) } }
+    );
+
+    const base = (process.env.CLIENT_URL || "http://localhost:5173").split(",")[0].trim();
+    const link = `${base}/reset-password/${token}`;
+
+    try {
+      await sendEmail({
+        to: user.email,
+        subject: "Reset your Dukan Saathi password",
+        text: `Hello ${user.name},\n\nUse this link to set a new password (valid for 30 minutes):\n${link}\n\nIf you did not ask for this, you can ignore this email.`,
+        html: `<p>Hello ${escapeHtml(user.name)},</p><p>Use this link to set a new password (valid for 30 minutes):</p><p><a href="${link}">${link}</a></p><p>If you did not ask for this, you can ignore this email.</p>`,
+      });
+    } catch (mailError) {
+      // The person still gets the generic reply; the real reason stays in the server log
+      console.error("Reset email failed:", mailError.message);
+    }
+
+    return reply();
+  } catch (error) {
+    res.status(500).json({ message: "Something went wrong. Please try again." });
+  }
+};
+
+// POST /api/auth/reset-password/:token  { password }
+export const resetPassword = async (req, res) => {
+  try {
+    const password = String(req.body.password || "");
+    if (password.length < 6) {
+      return res.status(400).json({ message: "Password must be at least 6 characters" });
+    }
+
+    const user = await User.findOne({
+      resetTokenHash: hashToken(String(req.params.token)),
+      resetTokenExpires: { $gt: new Date() },
+    });
+    if (!user) {
+      return res.status(400).json({ message: "This reset link is invalid or has expired. Please request a new one." });
+    }
+
+    await User.updateOne(
+      { _id: user._id },
+      {
+        $set: { password: await bcrypt.hash(password, 10) },
+        $unset: { resetTokenHash: "", resetTokenExpires: "" },
+      }
+    );
+
+    res.json({ message: "Password changed. You can log in now." });
+  } catch (error) {
+    res.status(500).json({ message: "Something went wrong. Please try again." });
+  }
 };

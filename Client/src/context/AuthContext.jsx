@@ -41,10 +41,12 @@ export const AuthProvider = ({ children }) => {
     });
   }, []);
 
-  const logout = () => {
+   const logout = () => {
     localStorage.removeItem("token");
     localStorage.removeItem("user");
     setUser(null);
+    // Full reload to "/" so every page starts fresh and no old data stays
+    window.location.assign("/");
   };
 
   return (

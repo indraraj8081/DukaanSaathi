@@ -1,0 +1,196 @@
+/* Main Home Page */
+.ds-home {
+  width: 100%;
+  max-width: none;
+  margin: 0;
+  padding: 0;
+  color: #102b35;
+  background: #ffffff;
+  box-sizing: border-box;
+}
+
+/* Hero Section - Full Width */
+.ds-hero {
+  display: grid;
+  grid-template-columns: 1.1fr 0.9fr;
+  align-items: center;
+  gap: 40px;
+
+  width: 100%;
+  max-width: none;
+  min-height: 400px;
+
+  margin: 0;
+  padding: 40px 5%;
+
+  box-sizing: border-box;
+  border-radius: 0;
+
+  background: linear-gradient(
+    120deg,
+    #eff8e9 0%,
+    #ffffff 48%,
+    #e3f2d9 100%
+  );
+}
+
+/* Left Side Content */
+.ds-hero-content {
+  width: 100%;
+  max-width: none;
+  min-width: 0;
+}
+
+/* Right Side Image */
+.ds-hero-image {
+  width: 100%;
+  height: 320px;
+  min-width: 0;
+  overflow: hidden;
+  border-radius: 22px;
+}
+
+.ds-hero-image img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* Search Bar */
+.ds-search {
+  width: 100%;
+  max-width: 650px;
+  box-sizing: border-box;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .ds-hero {
+    grid-template-columns: 1fr;
+    gap: 25px;
+    padding: 30px 5%;
+  }
+
+  .ds-hero-image {
+    height: 250px;
+  }
+}
+
+/* Main Home Page */
+.ds-home {
+  width: 100%;
+  max-width: none;
+  margin: 0;
+  padding: 0;
+  color: #102b35;
+  background: #ffffff;
+  box-sizing: border-box;
+}
+
+/* Hero Section - Full Width */
+.ds-hero {
+  display: grid;
+  grid-template-columns: 1.1fr 0.9fr;
+  align-items: center;
+  gap: 40px;
+
+  width: 100%;
+  max-width: none;
+  min-height: 400px;
+
+  margin: 0;
+  padding: 40px 5%;
+
+  box-sizing: border-box;
+  border-radius: 0;
+
+  background: linear-gradient(
+    120deg,
+    #eff8e9 0%,
+    #ffffff 48%,
+    #e3f2d9 100%
+  );
+}
+
+/* Left Side Content */
+.ds-hero-content {
+  width: 100%;
+  max-width: none;
+  min-width: 0;
+}
+
+/* Right Side Image */
+.ds-hero-image {
+  width: 100%;
+  height: 320px;
+  min-width: 0;
+  overflow: hidden;
+  border-radius: 22px;
+}
+
+.ds-hero-image img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* Search Bar */
+.ds-search {
+  width: 100%;
+  max-width: 650px;
+  box-sizing: border-box;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .ds-hero {
+    grid-template-columns: 1fr;
+    gap: 25px;
+    padding: 30px 5%;
+  }
+
+  .ds-hero-image {
+    height: 250px;
+  }
+}
+/* Fix homepage width */
+.ds-home {
+  width: 100%;
+  max-width: none;
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+/* Hero background full width */
+.ds-home .ds-hero {
+  width: 100%;
+  max-width: none;
+  margin: 0;
+  box-sizing: border-box;
+}
+
+/* All homepage sections */
+.ds-home .ds-section,
+.ds-home .ds-register-banner {
+  width: 100%;
+  max-width: none;
+  margin-left: 0;
+  margin-right: 0;
+  box-sizing: border-box;
+}.ds-home {
+  width: 100%;
+  max-width: none;
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+.ds-home .ds-hero {
+  width: 100%;
+  max-width: none;
+  margin: 0;
+  box-sizing: border-box;
+}

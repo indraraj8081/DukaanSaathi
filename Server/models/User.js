@@ -51,9 +51,13 @@ const userSchema = new mongoose.Schema(
     // Online store settings
     acceptingOrders: { type: Boolean, default: true },
     minOrder: { type: Number, default: 0, min: 0 },
+        // Password reset (the token itself is never stored, only its hash)
+    resetTokenHash: { type: String, select: false },
+    resetTokenExpires: { type: Date, select: false },
   },
   { timestamps: true }
 );
+
 
 userSchema.pre("save", async function () {
   if (!this.isModified("password")) return;

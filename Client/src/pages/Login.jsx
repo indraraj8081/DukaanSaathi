@@ -66,10 +66,16 @@ const Login = ({ portal = "customer" }) => {
           value={form.email} onChange={change} required />
         <PasswordField name="password" placeholder="Password" autoComplete="current-password"
           value={form.password} onChange={change} required />
-        <label className="flex items-center gap-2 text-sm text-gray-700">
-          <input type="checkbox" checked={remember} onChange={(e) => setRemember(e.target.checked)} className="w-4 h-4 accent-green-700" />
-          Remember me
-        </label>
+                <div className="flex items-center justify-between gap-3 text-sm">
+          <label className="flex items-center gap-2 text-gray-700">
+            <input type="checkbox" checked={remember} onChange={(e) => setRemember(e.target.checked)}
+              className="w-4 h-4 accent-green-700" />
+            Remember me
+          </label>
+          <Link to={`/forgot-password?portal=${portal}`} className="text-green-700 font-medium hover:underline">
+            Forgot password?
+          </Link>
+        </div>
         <button disabled={loading} className={`w-full text-white py-3 rounded-lg font-semibold disabled:opacity-60 ${p.btn}`}>
           {loading ? "Please wait..." : `${p.button} →`}
         </button>

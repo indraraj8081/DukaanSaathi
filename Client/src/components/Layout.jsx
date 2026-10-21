@@ -8,6 +8,7 @@ import ContactLinks from "./ContactLinks";
 import { connectSocket, beep } from "../utils/socket";
 import { money } from "../utils/format";
 
+
 const links = [
   { to: "/dashboard", label: "Dashboard", icon: "📊" },
   { to: "/orders", label: "Orders", icon: "🛵", badge: true },

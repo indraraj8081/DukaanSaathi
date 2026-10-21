@@ -31,9 +31,13 @@ import NotFound from "./pages/NotFound";
 import Layout from "./components/Layout";
 import AdminLayout from "./components/AdminLayout";
 import PublicLayout from "./components/PublicLayout";
-import SiteLayout from "./components/SiteLayout";
+// import SiteLayout from "./components/SiteLayout";
 import ProtectedRoute from "./components/ProtectedRoute";
 import PublicRoute from "./components/PublicRoute";
+import ForgotPassword from "./pages/ForgotPassword";
+import ResetPassword from "./pages/ResetPassword";
+// import "./home.css";
+
 
 // Logged-in users skip the marketing site and go straight to their own home
 const Landing = ({ children }) => {
@@ -45,26 +49,22 @@ const Landing = ({ children }) => {
 function App() {
   return (
     <Routes>
-      {/* Marketing site */}
-      <Route element={<Landing><SiteLayout /></Landing>}>
+      {/* Everything public shares one navbar and footer */}
+      <Route element={<PublicLayout />}>
         <Route path="/" element={<Home />} />
+        <Route path="/shops" element={<Shops />} />
         <Route path="/about" element={<About />} />
         <Route path="/features" element={<Features />} />
         <Route path="/contact" element={<Contact />} />
-      </Route>
-
-      {/* Login and sign up */}
-      <Route path="/login" element={<PublicRoute><Login portal="customer" /></PublicRoute>} />
-      <Route path="/shop-login" element={<PublicRoute><Login portal="shopkeeper" /></PublicRoute>} />
-      <Route path="/admin-login" element={<PublicRoute><Login portal="admin" /></PublicRoute>} />
-      <Route path="/signup" element={<PublicRoute><CustomerSignup /></PublicRoute>} />
-      <Route path="/register" element={<PublicRoute><Register /></PublicRoute>} />
-
-      {/* Customer side */}
-      <Route element={<PublicLayout />}>
-        <Route path="/shops" element={<Shops />} />
         <Route path="/shop/:shopId" element={<ShopStore />} />
         <Route path="/track/:code" element={<TrackOrder />} />
+
+        <Route path="/login" element={<PublicRoute><Login portal="customer" /></PublicRoute>} />
+        <Route path="/shop-login" element={<PublicRoute><Login portal="shopkeeper" /></PublicRoute>} />
+        <Route path="/admin-login" element={<PublicRoute><Login portal="admin" /></PublicRoute>} />
+        <Route path="/signup" element={<PublicRoute><CustomerSignup /></PublicRoute>} />
+        <Route path="/register" element={<PublicRoute><Register /></PublicRoute>} />
+
         <Route path="/my-orders" element={<ProtectedRoute roles={["customer"]}><MyOrders /></ProtectedRoute>} />
         <Route path="/account" element={<ProtectedRoute roles={["customer"]}><Account /></ProtectedRoute>} />
       </Route>
@@ -91,7 +91,9 @@ function App() {
         <Route path="/profile" element={<Profile />} />
       </Route>
 
-      <Route path="*" element={<NotFound />} />
+      <Route path="*" element={<NotFound />} /> 
+      <Route path="/forgot-password" element={<PublicRoute><ForgotPassword /></PublicRoute>} />
+      <Route path="/reset-password/:token" element={<ResetPassword />} />
     </Routes>
   );
 }

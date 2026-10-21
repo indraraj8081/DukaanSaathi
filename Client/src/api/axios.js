@@ -11,13 +11,9 @@ API.interceptors.request.use((config) => {
 });
 
 const endSession = () => {
-  let role = "customer";
-  try { role = JSON.parse(localStorage.getItem("user"))?.role || role; } catch { /* ignore */ }
   localStorage.removeItem("token");
   localStorage.removeItem("user");
-  window.location.assign(
-    role === "admin" ? "/admin-login" : role === "shopkeeper" ? "/shop-login" : "/login"
-  );
+  window.location.assign("/");
 };
 
 API.interceptors.response.use(
